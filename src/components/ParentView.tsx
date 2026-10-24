@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ScheduleEvent, StudentSubmission, ViewMode } from '../types';
 import { groupSlotsByDate } from '../utils/timeUtils';
 import { normalizeInstructions } from '../services/storage';
@@ -42,6 +42,29 @@ export const ParentView: React.FC<ParentViewProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedWilma, setCopiedWilma] = useState(false);
   const [showGdprModal, setShowGdprModal] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+
+  // Automatically hide floating bar when virtual keyboard opens or input is focused
+  useEffect(() => {
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+        setIsTyping(true);
+      }
+    };
+    const handleFocusOut = (e: FocusEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+        setIsTyping(false);
+      }
+    };
+    window.addEventListener('focusin', handleFocusIn);
+    window.addEventListener('focusout', handleFocusOut);
+    return () => {
+      window.removeEventListener('focusin', handleFocusIn);
+      window.removeEventListener('focusout', handleFocusOut);
+    };
+  }, []);
 
   // Check if a submission with this student name already exists
   const existingSubmission = submissions.find(
@@ -159,7 +182,7 @@ export const ParentView: React.FC<ParentViewProps> = ({
   };
 
   const handleCopyWilma = () => {
-    const wilmaMsg = `Hei huoltajat!\n\nOn aika varata oppilaiden arviointikeskusteluajat. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t).\n\nKäykää valitsemassa teille sopivat ajat alla olevasta linkistä:\n${shareUrl}\n\nValitkaa vähintään ${minRequired} teille sopivaa vaihtoehtoa. Vahvistan kullekin perheelle sovitun ajan Wilma-viestillä.\n\nYstävällisin terveisin,\n${event.teacherName || 'Opettaja'}`;
+    const wilmaMsg = `Hei huoltajat!\n\nOn aika varata oppilaiden arviointikeskusteluajat. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t).\n\nKäykää valitsemassa teille sopivat ajat alla olevasta linkistä:\n${shareUrl}\n\nValitkaa yhteensä vähintään ${minRequired} teille sopivaa vaihtoehtoa. Vahvistan kullekin perheelle sovitun ajan Wilma-viestillä.\n\nYstävällisin terveisin,\n${event.teacherName || 'Opettaja'}`;
 
     navigator.clipboard.writeText(wilmaMsg);
     setCopiedWilma(true);
@@ -399,6 +422,8 @@ export const ParentView: React.FC<ParentViewProps> = ({
                 placeholder="esim. Esko"
                 value={firstName}
                 onChange={e => setFirstName(e.target.value)}
+                onFocus={() => setIsTyping(true)}
+                onBlur={() => setIsTyping(false)}
                 autoComplete="off"
                 required
               />
@@ -416,13 +441,15 @@ export const ParentView: React.FC<ParentViewProps> = ({
                 maxLength={1}
                 value={lastNameInitial}
                 onChange={e => setLastNameInitial(e.target.value.toUpperCase())}
+                onFocus={() => setIsTyping(true)}
+                onBlur={() => setIsTyping(false)}
                 autoComplete="off"
                 required
               />
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginTop: '0.85rem', flexWrap: 'wrap', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div className="name-preview-pill">
               <span>Opettajalle näkyvä muoto:</span>
               <strong>{firstName.trim() || 'Etunimi'} {lastNameInitial.trim().toUpperCase() ? `${lastNameInitial.trim().toUpperCase()}.` : 'X.'}</strong>
@@ -431,24 +458,11 @@ export const ParentView: React.FC<ParentViewProps> = ({
             <button
               type="button"
               onClick={() => setShowGdprModal(true)}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: '0.2rem 0',
-                fontSize: '0.82rem',
-                color: '#2563eb',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                textUnderlineOffset: '2px',
-                fontWeight: 600,
-              }}
+              className="gdpr-subtle-link"
               title="Avaa viralliset GDPR- ja tietosuojatiedot"
             >
-              <HelpCircle size={15} color="#2563eb" />
-              <span>Tietosuoja: Koko sukunimeä ei kerätä (Lue GDPR-ohjeistus)</span>
+              <HelpCircle size={13} style={{ flexShrink: 0 }} />
+              <span>Tietosuoja: Koko sukunimeä ei kerätä (GDPR)</span>
             </button>
           </div>
 
@@ -482,7 +496,7 @@ export const ParentView: React.FC<ParentViewProps> = ({
               Valitse sopivat ajat
             </h3>
             <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
-              Rastita vähintään {minRequired} vaihtoehtoa
+              Rastita yhteensä vähintään {minRequired} vaihtoehtoa
             </span>
           </div>
 
@@ -545,7 +559,7 @@ export const ParentView: React.FC<ParentViewProps> = ({
       </div>
 
       {/* Sticky Bottom Bar for Submission */}
-      <div className="submission-bar">
+      <div className={`submission-bar ${isTyping ? 'hidden-on-input' : ''}`}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{

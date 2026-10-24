@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ScheduleEvent, StudentSubmission } from '../types';
-import { getStudentDisplayName } from '../utils/timeUtils';
+import { getStudentDisplayName, sortSlotsChronologically } from '../utils/timeUtils';
 import { Printer, ArrowLeft } from 'lucide-react';
 
 interface PrintViewProps {
@@ -13,6 +13,8 @@ export const PrintView: React.FC<PrintViewProps> = ({ event, submissions, onBack
   const handlePrint = () => {
     window.print();
   };
+
+  const sortedSlots = sortSlotsChronologically(event.slots);
 
   return (
     <div className="main-layout">
@@ -57,7 +59,7 @@ export const PrintView: React.FC<PrintViewProps> = ({ event, submissions, onBack
             </tr>
           </thead>
           <tbody>
-            {event.slots.map(slot => {
+            {sortedSlots.map(slot => {
               const student = submissions.find(s => s.id === slot.assignedStudentId);
               const displayName = student ? getStudentDisplayName(student, submissions) : '— (Vapaa) —';
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { ScheduleEvent, StudentSubmission } from '../types';
-import { getStudentDisplayName } from '../utils/timeUtils';
+import type { ScheduleEvent, StudentSubmission, ViewMode } from '../types';
+import { getStudentDisplayName, sortSlotsChronologically } from '../utils/timeUtils';
 import { assignStudentToSlot, saveEvent, addSubmission } from '../services/storage';
 import confetti from 'canvas-confetti';
 import {
@@ -16,18 +16,21 @@ import {
   PlusCircle,
   X,
   ArrowLeftRight,
+  ArrowRight,
 } from 'lucide-react';
 
 interface MatchingViewProps {
   event: ScheduleEvent;
   submissions: StudentSubmission[];
   onEventUpdated: (updated: ScheduleEvent) => void;
+  onNavigate?: (view: ViewMode) => void;
 }
 
 export const MatchingView: React.FC<MatchingViewProps> = ({
   event,
   submissions,
   onEventUpdated,
+  onNavigate,
 }) => {
   const [copiedWilma, setCopiedWilma] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -210,10 +213,11 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
     window.location.reload();
   };
 
-  // Distinct day labels for filtering
-  const distinctDays = Array.from(new Set(event.slots.map(s => s.dateLabel || s.date)));
+  // Distinct day labels for filtering, ordered chronologically
+  const sortedSlots = sortSlotsChronologically(event.slots);
+  const distinctDays = Array.from(new Set(sortedSlots.map(s => s.dateLabel || s.date)));
 
-  const displayedSlots = event.slots.filter(s => {
+  const displayedSlots = sortedSlots.filter(s => {
     if (filterDay === 'ALL') return true;
     return (s.dateLabel || s.date) === filterDay;
   });
@@ -232,7 +236,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>
-            Aikasovitus & Palapelin ratkaisu
+            Aikasovitus & palapelin ratkaisu
           </h2>
           <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
             Vie hiiri oppilaan nimen päälle nähdäksesi kaikki hänen toiveensa hehkumassa!
@@ -675,7 +679,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
               Rastita paperilapussa merkityt ajat:
             </label>
             <div style={{ maxHeight: '220px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.5rem', marginBottom: '1.25rem' }}>
-              {event.slots.map(s => {
+              {sortedSlots.map(s => {
                 const isChecked = manualSlots.includes(s.id);
                 return (
                   <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.5rem', cursor: 'pointer', fontSize: '0.85rem' }}>
@@ -702,6 +706,74 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                 Tallenna oppilas
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Guided Next Step Banner to A4 Print */}
+      {event.slots.some(s => s.assignedStudentId) && onNavigate && (
+        <div style={{
+          marginTop: '1.5rem',
+          background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+          color: '#ffffff',
+          borderRadius: '16px',
+          padding: '1.5rem 1.75rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          boxShadow: '0 8px 20px -4px rgba(22, 163, 74, 0.35)',
+        }}>
+          <div>
+            <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.9, fontWeight: 800 }}>
+              🎉 Johdatuspolku: Vaihe 2/3 valmis
+            </span>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '4px 0 2px 0', color: '#ffffff' }}>
+              Ajat sovitettu! Haluatko tulostaa A4-aikataulun?
+            </h3>
+            <p style={{ opacity: 0.92, fontSize: '0.9rem', margin: 0 }}>
+              Voit ottaa siistin A4-tulosteen luokan oveen tai tarkastella huoltajien katselulinkkiä.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => onNavigate('public')}
+              style={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                color: '#ffffff',
+                border: '1.5px solid rgba(255, 255, 255, 0.45)',
+                padding: '0.7rem 1.25rem',
+                borderRadius: '10px',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Katselulinkki huoltajille
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('print')}
+              style={{
+                background: '#ffffff',
+                color: '#15803d',
+                border: 'none',
+                padding: '0.7rem 1.4rem',
+                borderRadius: '10px',
+                fontWeight: 800,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              }}
+            >
+              <span>Siirry A4-Tulosteeseen</span>
+              <ArrowRight size={18} />
+            </button>
           </div>
         </div>
       )}

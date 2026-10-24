@@ -49,7 +49,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
           <div className="brand-icon">
             <Calendar size={20} />
           </div>
-          <span>Sopivat Ajat</span>
+          <span>Sopivat ajat</span>
         </div>
 
         {/* Desktop View Switcher */}
@@ -98,7 +98,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
             title="Tulosta A4-aikataulu oveen tai kansioon"
           >
             <Printer size={16} />
-            <span>A4-Tuloste</span>
+            <span>A4-tuloste</span>
           </button>
 
           <button
@@ -205,7 +205,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                 onClick={() => handleNavClick('print')}
               >
                 <Printer size={18} />
-                <span>A4-Tuloste</span>
+                <span>A4-tuloste</span>
               </button>
 
               <button

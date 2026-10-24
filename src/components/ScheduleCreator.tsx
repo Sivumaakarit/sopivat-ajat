@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
-import type { ScheduleEvent, TimeSlot } from '../types';
-import { addMinutesToTime, getMinutesDifference, groupSlotsByDate } from '../utils/timeUtils';
+import type { ScheduleEvent, TimeSlot, ViewMode } from '../types';
+import {
+  addMinutesToTime,
+  getMinutesDifference,
+  groupSlotsByDate,
+  getNextBusinessDay,
+  sortSlotsChronologically,
+} from '../utils/timeUtils';
 import {
   Plus,
   Trash2,
@@ -11,18 +17,23 @@ import {
   Settings,
   Sparkles,
   Copy,
+  Zap,
+  ArrowRight,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface ScheduleCreatorProps {
   event: ScheduleEvent;
   onUpdateEvent: (updated: ScheduleEvent) => void;
   onOpenPreview: () => void;
+  onNavigate: (view: ViewMode) => void;
 }
 
 export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
   event,
   onUpdateEvent,
   onOpenPreview,
+  onNavigate,
 }) => {
   // Current active day for slot creation (empty if starting from scratch with 0 slots)
   const [selectedDateLabel, setSelectedDateLabel] = useState(() => {
@@ -60,9 +71,11 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
   const [customDayLabel, setCustomDayLabel] = useState('');
   const [customSection, setCustomSection] = useState('Marraskuu');
 
-  // Find the last slot of the active day
-  const currentDaySlots = event.slots.filter(
-    s => (s.dateLabel === selectedDateLabel || s.date === selectedDate) && (s.section === selectedSection)
+  // Find slots of active day, always sorted chronologically
+  const currentDaySlots = sortSlotsChronologically(
+    event.slots.filter(
+      s => (s.dateLabel === selectedDateLabel || s.date === selectedDate) && (s.section === selectedSection)
+    )
   );
 
   const calculatedEndTime = addMinutesToTime(startTimeInput, event.slotDurationMinutes);
@@ -78,7 +91,7 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
       section: selectedSection,
     };
 
-    const updatedSlots = [...event.slots, newSlot];
+    const updatedSlots = sortSlotsChronologically([...event.slots, newSlot]);
     onUpdateEvent({ ...event, slots: updatedSlots });
 
     // Auto-advance next suggested start time
@@ -152,7 +165,7 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
         section: selectedSection,
       }));
 
-      onUpdateEvent({ ...event, slots: [...event.slots, ...clonedSlots] });
+      onUpdateEvent({ ...event, slots: sortSlotsChronologically([...event.slots, ...clonedSlots]) });
     }
   };
 
@@ -189,9 +202,32 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
     setShowCustomDayInput(false);
   };
 
-  // Distinct day labels currently in the schedule
-  const distinctDayLabels = Array.from(new Set(event.slots.map(s => s.dateLabel || s.date)));
+  // Quick-add specific day (e.g. next business day)
+  const handleAddSpecificDay = (isoDate: string, dayLabel: string, section?: string) => {
+    setSelectedDateLabel(dayLabel);
+    setSelectedDate(isoDate);
+    setSelectedSection(section || '');
+    setCustomDayLabel('');
+    setCustomDateValue('');
+    setShowCustomDayInput(false);
+  };
+
+  // Distinct day labels currently in the schedule, ordered chronologically
+  const distinctDayLabels = Array.from(new Set(sortSlotsChronologically(event.slots).map(s => s.dateLabel || s.date)));
   const groupedDays = groupSlotsByDate(event.slots);
+
+  // Compute next business day suggestion (skips weekends!)
+  const referenceDate = selectedDate || (event.slots.length > 0 ? event.slots[event.slots.length - 1].date : new Date().toISOString().split('T')[0]);
+  const nextBusinessDay = getNextBusinessDay(referenceDate);
+
+  const handleOpenCustomDay = () => {
+    if (!showCustomDayInput) {
+      setCustomDateValue(nextBusinessDay.isoDate);
+      setCustomDayLabel(nextBusinessDay.dateLabel);
+      setCustomSection(nextBusinessDay.section);
+    }
+    setShowCustomDayInput(!showCustomDayInput);
+  };
 
   return (
     <div className="main-layout">
@@ -206,10 +242,49 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
           </p>
         </div>
 
-        <button className="btn-primary" onClick={onOpenPreview}>
-          <Eye size={16} />
-          <span>Esikatsele huoltajanäkymää</span>
-        </button>
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+          {event.slots.length > 0 ? (
+            <>
+              <button
+                type="button"
+                onClick={() => onNavigate('parent')}
+                style={{
+                  background: '#16a34a',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '0.55rem 1.25rem',
+                  borderRadius: '8px',
+                  fontWeight: 800,
+                  fontSize: '0.92rem',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  boxShadow: '0 2px 8px rgba(22, 163, 74, 0.25)',
+                }}
+                title="Esikatsele huoltajanäkymää ja kopioi jakolinkki Wilmaan"
+              >
+                <span>Vaihe 2: Esikatsele ja jaa huoltajille</span>
+                <ArrowRight size={17} />
+              </button>
+
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => onNavigate('matching')}
+                title="Siirry suoraan aikasovitukseen (palapeli)"
+                style={{ fontWeight: 600, fontSize: '0.85rem' }}
+              >
+                <span>Aikasovitus (palapeli)</span>
+              </button>
+            </>
+          ) : (
+            <button className="btn-secondary" onClick={onOpenPreview}>
+              <Eye size={16} />
+              <span>Esikatsele huoltajanäkymää</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Basic Settings Card */}
@@ -289,15 +364,41 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
             </h3>
           </div>
 
-          <button
-            type="button"
-            className="btn-primary"
-            style={{ fontSize: '0.85rem', padding: '0.45rem 0.85rem' }}
-            onClick={() => setShowCustomDayInput(!showCustomDayInput)}
-          >
-            <Calendar size={15} />
-            <span>📅 + Lisää uusi päivä kalenterista</span>
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* 1-click next business day button */}
+            <button
+              type="button"
+              onClick={() => handleAddSpecificDay(nextBusinessDay.isoDate, nextBusinessDay.dateLabel, nextBusinessDay.section)}
+              title={`Luo seuraava arkipäivä ${nextBusinessDay.dateLabel} yhdellä klikkauksella`}
+              style={{
+                background: '#f0fdf4',
+                border: '1.5px solid #86efac',
+                color: '#15803d',
+                padding: '0.45rem 0.85rem',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Zap size={14} color="#16a34a" />
+              <span>+ Seuraava arkipäivä: <strong>{nextBusinessDay.dateLabel}</strong></span>
+            </button>
+
+            <button
+              type="button"
+              className="btn-primary"
+              style={{ fontSize: '0.85rem', padding: '0.45rem 0.85rem' }}
+              onClick={handleOpenCustomDay}
+            >
+              <Calendar size={15} />
+              <span>📅 Valitse muu päivä...</span>
+            </button>
+          </div>
         </div>
 
         {/* Modal / Inline Add New Day from Calendar */}
@@ -317,14 +418,20 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
             </h4>
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
               <div>
-                <label className="form-label" style={{ fontSize: '0.8rem' }}>Päivämäärä</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  style={{ width: '160px' }}
-                  value={customDateValue}
-                  onChange={handleCalendarPickerChange}
-                />
+                <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>📅</span>
+                  <span>Päivämäärä</span>
+                </label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <span style={{ position: 'absolute', left: '10px', fontSize: '1.2rem', pointerEvents: 'none', zIndex: 1 }}>📅</span>
+                  <input
+                    type="date"
+                    className="form-input"
+                    style={{ width: '175px', paddingLeft: '2.5rem', fontWeight: 700, cursor: 'pointer', height: '42px' }}
+                    value={customDateValue}
+                    onChange={handleCalendarPickerChange}
+                  />
+                </div>
               </div>
 
               <div>
@@ -403,13 +510,20 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
             }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
                 <div>
-                  <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>1. Valitse päivämäärä</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={customDateValue}
-                    onChange={handleCalendarPickerChange}
-                  />
+                  <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>📅</span>
+                    <span>1. Valitse päivämäärä kalenterista</span>
+                  </label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <span style={{ position: 'absolute', left: '10px', fontSize: '1.25rem', pointerEvents: 'none', zIndex: 1 }}>📅</span>
+                    <input
+                      type="date"
+                      className="form-input"
+                      style={{ paddingLeft: '2.5rem', fontWeight: 700, cursor: 'pointer', height: '42px', fontSize: '0.95rem' }}
+                      value={customDateValue}
+                      onChange={handleCalendarPickerChange}
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>2. Suomenkielinen otsikko</label>
@@ -711,6 +825,70 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
               })}
             </div>
           )}
+
+          {/* Guided Action Pathway: Step 1 Complete -> Next step */}
+          {event.slots.length > 0 && (
+            <div style={{
+              marginTop: '1.75rem',
+              background: '#f0fdf4',
+              border: '2px solid #86efac',
+              borderRadius: '14px',
+              padding: '1.25rem 1.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1rem',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ background: '#dcfce7', color: '#16a34a', padding: '0.5rem', borderRadius: '50%', display: 'flex' }}>
+                  <CheckCircle2 size={24} />
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#14532d', margin: 0 }}>
+                    Keskusteluajat luotu ({event.slots.length} aikaa {distinctDayLabels.length} päivälle)
+                  </h4>
+                  <p style={{ color: '#166534', fontSize: '0.85rem', margin: '2px 0 0 0' }}>
+                    Siirry seuraavaksi tarkastelemaan toiveita tai esikatsele huoltajanäkymää.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('parent')}
+                  style={{
+                    background: '#16a34a',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '0.65rem 1.3rem',
+                    borderRadius: '10px',
+                    fontWeight: 800,
+                    fontSize: '0.95rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    boxShadow: '0 4px 10px rgba(22, 163, 74, 0.25)',
+                  }}
+                  title="Esikatsele huoltajanäkymää ja kopioi jakolinkki Wilmaan"
+                >
+                  <span>Vaihe 2: Esikatsele ja jaa huoltajille</span>
+                  <ArrowRight size={18} />
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => onNavigate('matching')}
+                  style={{ fontWeight: 600 }}
+                  title="Siirry suoraan aikasovitukseen (palapeli)"
+                >
+                  <span>Aikasovitus (palapeli)</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         </>
         )}
@@ -799,6 +977,78 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
           </div>
         )}
       </div>
+
+      {/* Bottom Big Guided Next Step Banner */}
+      {event.slots.length > 0 && (
+        <div style={{
+          marginTop: '1.5rem',
+          background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+          color: '#ffffff',
+          borderRadius: '16px',
+          padding: '1.5rem 1.75rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1.25rem',
+          boxShadow: '0 10px 25px -5px rgba(22, 163, 74, 0.35)',
+        }}>
+          <div>
+            <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.9, fontWeight: 800 }}>
+              🚀 Johdatuspolku: Vaihe 1/3 valmis
+            </span>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '4px 0 2px 0', color: '#ffffff' }}>
+              Päivät ja ajat on luotu! Siirrytäänkö eteenpäin?
+            </h3>
+            <p style={{ opacity: 0.92, fontSize: '0.9rem', margin: 0 }}>
+              Siirry aikasovitukseen (palapeli) tarkastelemaan vastauksia tai jaa julkinen linkki huoltajille Wilmassa.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => onNavigate('parent')}
+              style={{
+                background: '#ffffff',
+                color: '#15803d',
+                border: 'none',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '10px',
+                fontWeight: 800,
+                fontSize: '1rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.15)',
+              }}
+            >
+              <span>Vaihe 2: Esikatsele ja jaa huoltajille</span>
+              <ArrowRight size={20} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onNavigate('matching')}
+              style={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                color: '#ffffff',
+                border: '1.5px solid rgba(255, 255, 255, 0.45)',
+                padding: '0.75rem 1.25rem',
+                borderRadius: '10px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}
+            >
+              <span>Tai siirry suoraan aikasovitukseen</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

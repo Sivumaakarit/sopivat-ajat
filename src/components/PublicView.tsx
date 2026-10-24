@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { ScheduleEvent, StudentSubmission } from '../types';
-import { getStudentDisplayName } from '../utils/timeUtils';
+import { getStudentDisplayName, sortSlotsChronologically } from '../utils/timeUtils';
 import { Search, Calendar, Clock, CheckCircle } from 'lucide-react';
 
 interface PublicViewProps {
@@ -11,8 +11,9 @@ interface PublicViewProps {
 export const PublicView: React.FC<PublicViewProps> = ({ event, submissions }) => {
   const [searchName, setSearchName] = useState('');
 
-  // Assigned slots only or all slots?
-  const assignedSlots = event.slots.filter(s => s.assignedStudentId);
+  // Assigned slots only, sorted chronologically
+  const sortedSlots = sortSlotsChronologically(event.slots);
+  const assignedSlots = sortedSlots.filter(s => s.assignedStudentId);
 
   const filteredSlots = assignedSlots.filter(slot => {
     if (!searchName.trim()) return true;

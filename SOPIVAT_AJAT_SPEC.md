@@ -1,25 +1,26 @@
-# 📌 SOPIVAT AJAT – Master-spesifikaatio & Arkkitehtuuridokumentti
-*Versio: 1.3.0 | Päivitetty: 24.10.2026*  
-*Tila: Kehitys lokaalissa (Tuotanto julkaistaan vain erillisestä käskystä)*  
+# 📌 Sopivat ajat – Master-spesifikaatio & arkkitehtuuridokumentti
+*Versio: 1.5.0 | Päivitetty: 24.10.2026*  
+*Tila: Kehitys lokaalissa + Supabase Pilvitietokanta kytketty*  
 *🌐 Live URL:* [https://sopivat-ajat.vercel.app](https://sopivat-ajat.vercel.app)  
 *📦 GitHub:* [https://github.com/Sivumaakarit/sopivat-ajat](https://github.com/Sivumaakarit/sopivat-ajat)  
 
 ---
 
-## 1. Yleiskatsaus ja Visio
+## 1. Yleiskatsaus ja visio
 
-**"Sopivat Ajat"** on moderni, visuaalisesti ensiluokkainen ja kognitiivista kuormitusta radikaalisti vähentävä verkkotyökalu koulujen arviointikeskustelujen ja yleisten tapaamisaikojen keräämiseen, sovitteluun ja vahvistamiseen.
+**"Sopivat ajat"** on moderni, visuaalisesti ensiluokkainen ja kognitiivista kuormitusta radikaalisti vähentävä verkkotyökalu koulujen arviointikeskustelujen ja yleisten tapaamisaikojen keräämiseen, sovitteluun ja vahvistamiseen.
 
-### Keskeiset uusimmat lisäykset (v1.3.0):
-* **Puhdas nollalähtö (Zero-Start):**
-  * Sovellus käynnistyy aina puhtaalta nollapöydältä (0 päivää, 0 aikaa, 0 vastausta).
-  * Mitään mallipäiviä tai esimerkkivastauksia ei tyrkytetä valmiina.
-  * Käyttäjä aloittaa valitsemalla ensimmäisen päivämäärän suoraan kalenterista selkeällä aloituslomakkeella.
-* **Mobiilin hampurilaisvalikko (Hamburger Navigation Drawer):**
-  * Kapeilla mobiilinäytöillä (`< 768px`) yläpalkin välilehdet siirtyvät selkeän hampurilaispainikkeen (🍔 / `Menu`) taakse.
-  * Avaa sulavan ja ergonomisen sivupaneelin, jossa on suuret peukaloystävälliset kosketuspinnat (vähintään 48px), taustan sumennus (backdrop-filter) ja suora pääsy kaikkiin näkymiin sekä tietojen tyhjennykseen.
-* **Kehityspolitiikka:**
-  * Kaikki muutokset tehdään ja testataan ainoastaan lokaalisti. Tuotantoon (Git/Vercel) siirretään vasta kun käyttäjä antaa nimenomaisen ohjeen.
+### Keskeiset uusimmat ominaisuudet (v1.5.0):
+* **Supabase Pilvitietokanta & Reaaliaikasynkronointi (Realtime Sync):**
+  - Opettajan luomat ajat ja asetukset tallentuvat suoraan Supabase PostgreSQL -tietokantaan (`events` ja `submissions`).
+  - Kun huoltaja vastaa puhelimellaan jakolinkin kautta (`?e=[eventId]`), vastaus tallentuu pilveen ja ilmestyy välittömästi opettajan tietokoneen näytölle ilman sivun uudelleenlatausta.
+* **Häiriötön Huoltajanäkymä (Distraction-Free Parent Mode):**
+  - Kun huoltaja avaa jakolinkin `?e=xyz`, opettajan hallintapalkki (HeaderNav) piilotetaan. Huoltaja näkee vain siistin, selkeän vastauslomakkeen.
+* **Looginen 4-vaiheinen johdatuspolku (Guided Workflow):**
+  1. **Vaihe 1: Aikojen hallinta:** Opettaja luo päivät ja aikaraamit. Ensisijainen painike ohjaa suoraan Vaiheeseen 2 (Esikatsele ja jaa).
+  2. **Vaihe 2: Huoltajanäkymä & Jakopaneeli:** Opettaja esikatselee lomaketta sellaisena kuin huoltaja sen näkee, kopioi jakolinkin tai valmiin Wilma-viestin yhdellä klikkauksella. Ensisijainen painike ohjaa Vaiheeseen 3 (Aikasovitus).
+  3. **Vaihe 3: Aikasovitus (palapeli):** Opettaja sovittaa vastanneet oppilaat aikoihin konfliktienestolla ja saa yhteenvedon.
+  4. **Vaihe 4: A4-tuloste & tiedotteet:** Valmis tulostettava lukujärjestyspohja ja Wilma-vahvistusviestit.
 
 ### Keskeinen ongelma ja ratkaisu:
 * **Ennen:** Opettaja printtaa kymmeniä paperilappuja reppuihin, huoltajat rastittavat kynällä aikoja, opettaja pyörittää paperikasaa pöydällään yrittäen manuaalisesti sovittaa 25 oppilaan toiveet ilman tuplabuukkauksia, ja kirjoittaa lopuksi jokaiselle Wilma-viestin käsin.
@@ -63,6 +64,7 @@ Sovellus noudattaa tiukasti *Responsible App*-, *GeoVitonen*- ja *Visual Excelle
   * Järjestelmä tunnistaa hypyn lennosta, luo `13:15 – 13:35` ja ketjuttaa seuraavat automaattisesti uudesta ajasta eteenpäin.
   * *Visuaalinen taukoviiva:* Jos kahden ajan välinen tauko on suuri (yli 1 tunti), järjestelmä piirtää väliin automaattisesti kevyen visuaalisen erottimen (esim. `☕ Aikahyppy / Iltapäivä`).
   * *Hylkäys:* Hyväksymättömät harmaat ehdotusrivit jäävät automaattisesti pois julkaistavasta versiosta. Jokaisen ajan perässä on lisäksi poistonappi `(✕)`.
+  * *Automaattinen kronologinen järjestys (Deterministic Chronological Sorting):* Kaikki ajat ja päivät järjestetään aina automaattisesti kronologiseen kalenteri- ja kellonaikajärjestykseen riippumatta siitä, missä järjestyksessä opettaja ne syöttää (esim. jos iltapäivän `14:20` jälkeen lisätään `13:20`, `13:20` siirtyy automaattisesti oikealle paikalleen ennen `14:20`). Sama järjestys säilyy sataprosenttisesti kaikissa jatkonäkymissä (huoltajanäkymä, palapelisovitus, A4-tuloste).
 
 #### C. Esikatselu (Preview):
 * Ennen julkaisua opettaja voi yhdellä napilla kytkeä **"Esikatsele huoltajan näkymää"** -tilan.
@@ -90,7 +92,7 @@ Sovellus noudattaa tiukasti *Responsible App*-, *GeoVitonen*- ja *Visual Excelle
 
 ---
 
-### 3.3 Opettajan Palapeli- & Lukitustyökalu (Matching Engine)
+### 3.3 Opettajan palapeli- ja lukitustyökalu (Matching Engine)
 
 Kun vastaukset ovat saapuneet, opettajan ei tarvitse arpoa sopivia aikoja:
 
@@ -169,11 +171,13 @@ export interface StudentSubmission {
 
 ### 5.2 Tietosuoja & Tallennusratkaisu (GDPR by Design)
 
-* **Data Minimization:** Ei sukunimiä, ei puhelinnumeroita, ei sähköposteja. Henkilötiedoksi luokiteltava aines on minimoitu pelkkään etunimeen ja yhteen kirjaimeen.
+* **Data Minimization:** Ei sukunimiä, ei puhelinnumeroita, ei sähköposteja. Henkilötiedoksi luokiteltava aines on minimoitu pelkkään etunimeen ja yhteen kirjaimeen (`Esko M.`).
+* **Kompakti & inhimillinen syöttökenttä:** Etunimikenttä on rajattu luonnolliseen leveyteen (260 px), ja sukunimen 1. kirjain (`esim. M`) asettuu sen viereen samalle riville tasapainoiseksi kokonaisuudeksi.
+* **Interaktiivinen GDPR-opas:** Kysymysmerkistä avautuu kattava opas, joka selittää Perusopetuslain (628/1998, 16 § & 22 §), EU GDPR:n minimointiperiaatteen (5(1)(c)) ja linkittää Tietosuojavaltuutetun toimistoon (tietosuoja.fi).
 * **Tallennuskerros:**
-  * Kyselyt ja vastaukset tallennetaan turvalliseen EU-pohjaiseen tietovarastoon.
-  * **Automaattinen poisto (TTL):** Kysely ja kaikki sen vastaukset poistuvat automaattisesti 30 vuorokauden kuluttua arviointijakson päättymisestä.
-  * **Vienti omaan talteen:** Opettaja voi milloin tahansa ladata kaikki vastaukset ja lopullisen aikataulun omalle koneelleen (Excel / CSV / JSON).
+  * Kyselyt ja vastaukset tallennetaan turvalliseen EU-pohjaiseen tietovarastoon (Tukholma, Ruotsi).
+  * **Automaattinen poisto (TTL):** Kysely ja kaikki sen vastaukset poistuvat arviointijakson päätyttyä, ja opettaja voi poistaa tiedot milloin tahansa yhdellä painalluksella.
+  * **Vienti omaan talteen:** Opettaja voi milloin tahansa ladata kaikki vastaukset ja lopullisen aikataulun omalle koneelleen (A4-printti, CSV, Wilma-tiedote).
 
 ---
 

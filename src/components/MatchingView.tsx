@@ -143,7 +143,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
   const executeAutoSolve = (
     mode: 'balanced' | 'packed',
     allowGaps: boolean,
-    fallbackToFill: boolean
+    _fallbackToFill: boolean
   ) => {
     const newSlots = [...event.slots];
     const currentlyAssigned = new Set<string>();
@@ -152,9 +152,14 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
       if (s.assignedStudentId) currentlyAssigned.add(s.assignedStudentId);
     });
 
-    const studentsToAssign = submissions
-      .filter(s => !currentlyAssigned.has(s.id))
-      .sort((a, b) => a.selectedSlotIds.length - b.selectedSlotIds.length);
+    const unassignedStudents = submissions.filter(s => !currentlyAssigned.has(s.id));
+    if (unassignedStudents.length === 0) {
+      setShowAutoSolveModal(false);
+      showToast('Kaikki oppilaat on jo sijoitettu.');
+      return;
+    }
+
+    const availableSlots = newSlots.filter(s => !s.assignedStudentId);
 
     // Group and sort slots chronologically per day
     const daySlotsMap = new Map<string, TimeSlot[]>();
@@ -178,214 +183,184 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
       });
     });
 
-    // Determine target cap per day:
-    // Balanced: 1 if 1, 2 if 2, 2 if 3, 3 if 4, total-1 if total >= 5
-    // Packed: total
+    // Target caps per day (in balanced mode)
     const dayCapMap = new Map<string, number>();
     daySlotsMap.forEach((daySlots, dayKey) => {
       const total = daySlots.length;
       if (mode === 'balanced') {
-        if (total === 1) {
-          dayCapMap.set(dayKey, 1);
-        } else if (total === 2) {
-          dayCapMap.set(dayKey, 2);
-        } else if (total === 3) {
-          dayCapMap.set(dayKey, 2); // 2 peräkkäistä kolmesta
-        } else if (total === 4) {
-          dayCapMap.set(dayKey, 3); // 3 peräkkäistä neljästä
-        } else {
-          dayCapMap.set(dayKey, total - 1);
-        }
+        if (total === 1) dayCapMap.set(dayKey, 1);
+        else if (total === 2) dayCapMap.set(dayKey, 2);
+        else if (total === 3) dayCapMap.set(dayKey, 2);
+        else if (total === 4) dayCapMap.set(dayKey, 3);
+        else dayCapMap.set(dayKey, total - 1);
       } else {
         dayCapMap.set(dayKey, total);
       }
     });
 
-    // Helper to get currently assigned slot indices for a day
-    const getAssignedIndices = (dayKey: string): number[] => {
-      const slots = daySlotsMap.get(dayKey) || [];
-      const indices: number[] = [];
-      slots.forEach((s, idx) => {
-        if (s.assignedStudentId) indices.push(idx);
-      });
-      return indices.sort((a, b) => a - b);
-    };
+    // Heuristic preference score for a slot given current assignments
+    const getSlotPreference = (slot: TimeSlot, currentMatches: Map<string, string>): number => {
+      const meta = slotMetaMap.get(slot.id);
+      if (!meta) return 0;
+      let score = 0;
 
-    // Helper to check if adding index to day maintains contiguity (no gaps in between)
-    const wouldBeContiguous = (dayKey: string, newIndex: number): boolean => {
-      if (allowGaps) return true;
-      const current = getAssignedIndices(dayKey);
-      if (current.length === 0) return true;
-      const combined = [...current, newIndex].sort((a, b) => a - b);
-      const min = combined[0];
-      const max = combined[combined.length - 1];
-      // Consecutive without holes if span equals count
-      return max - min + 1 === combined.length;
-    };
-
-    // Helper: never start an empty day at index > 0 if any unassigned student has selected slot 0 (or earlier slots < index)
-    const canStartDayAtIndex = (dayKey: string, index: number): boolean => {
-      if (index === 0) return true;
-      if (allowGaps) return true;
-      const daySlots = daySlotsMap.get(dayKey) || [];
-      for (let i = 0; i < index; i++) {
-        const earlierSlot = daySlots[i];
-        if (!earlierSlot) continue;
-        const hasWish = studentsToAssign.some(
-          s => !currentlyAssigned.has(s.id) && s.selectedSlotIds.includes(earlierSlot.id)
-        );
-        if (hasWish) {
-          return false;
-        }
-      }
-      return true;
-    };
-
-    let assignedNow = 0;
-
-    // Priority 0: Ensure the first slot (index 0) of every day is filled first if any unassigned student wished for it!
-    // "Ensisijaisesti siis katso ettei odottelua jää opettajalle eli päivän eka aika täytetään aina jos siihen on varaus."
-    let firstSlotLoop = true;
-    while (firstSlotLoop) {
-      firstSlotLoop = false;
-      const candidates: { slot: TimeSlot; student: StudentSubmission }[] = [];
-
-      daySlotsMap.forEach((daySlots) => {
-        const firstSlot = daySlots[0];
-        if (firstSlot && !firstSlot.assignedStudentId) {
-          const eligibleStudents = studentsToAssign.filter(
-            s => !currentlyAssigned.has(s.id) && s.selectedSlotIds.includes(firstSlot.id)
-          );
-          if (eligibleStudents.length > 0) {
-            eligibleStudents.sort((a, b) => a.selectedSlotIds.length - b.selectedSlotIds.length);
-            candidates.push({ slot: firstSlot, student: eligibleStudents[0] });
-          }
+      const currentDayAssignedIndices: number[] = [];
+      const daySlots = daySlotsMap.get(meta.dayKey) || [];
+      daySlots.forEach((s, idx) => {
+        if (s.assignedStudentId || currentMatches.has(s.id)) {
+          currentDayAssignedIndices.push(idx);
         }
       });
 
-      if (candidates.length > 0) {
-        // Pick candidate whose student has fewest total wishes (MRV)
-        candidates.sort((a, b) => a.student.selectedSlotIds.length - b.student.selectedSlotIds.length);
-        const best = candidates[0];
-        best.slot.assignedStudentId = best.student.id;
-        currentlyAssigned.add(best.student.id);
-        assignedNow++;
-        firstSlotLoop = true;
-      }
-    }
+      const cap = dayCapMap.get(meta.dayKey) || meta.totalInDay;
 
-    const unassignedInPhase1: StudentSubmission[] = [];
-
-    // Phase 1: Assign respecting daily cap, no-gap contiguity, and balancing evenly across days
-    for (const student of studentsToAssign) {
-      if (currentlyAssigned.has(student.id)) continue;
-
-      const eligibleSlots = newSlots.filter(slot => {
-        if (slot.assignedStudentId) return false;
-        if (!student.selectedSlotIds.includes(slot.id)) return false;
-
-        const meta = slotMetaMap.get(slot.id);
-        if (!meta) return false;
-
-        const currentAssigned = getAssignedIndices(meta.dayKey);
-        const cap = dayCapMap.get(meta.dayKey) || meta.totalInDay;
-
-        // Daily cap check
-        if (currentAssigned.length >= cap) return false;
-
-        // Never start an empty day skipping slot 0 if someone wants it
-        if (currentAssigned.length === 0 && !canStartDayAtIndex(meta.dayKey, meta.index)) {
-          return false;
+      // 1. Starting slot (index 0) preference on empty day:
+      // "Ensisijaisesti siis katso ettei odottelua jää opettajalle eli päivän eka aika täytetään aina jos siihen on varaus."
+      if (currentDayAssignedIndices.length === 0) {
+        if (meta.index === 0) {
+          score += 2500; // Strong bonus to start at day's first slot
+        } else {
+          score -= meta.index * 150;
         }
-
-        // Contiguity check (no gaps in between)
-        return wouldBeContiguous(meta.dayKey, meta.index);
-      });
-
-      if (eligibleSlots.length > 0) {
-        // Sort candidate slots:
-        // 1. Day with fewest assignments so far (spreads appointments evenly across all days)
-        // 2. Extending an existing active block
-        // 3. Earlier slot index (starts as early as possible with no wait at the start)
-        eligibleSlots.sort((a, b) => {
-          const metaA = slotMetaMap.get(a.id)!;
-          const metaB = slotMetaMap.get(b.id)!;
-
-          const countA = getAssignedIndices(metaA.dayKey).length;
-          const countB = getAssignedIndices(metaB.dayKey).length;
-
-          if (countA !== countB) return countA - countB; // balance across days
-
-          const hasExistingA = countA > 0 ? 1 : 0;
-          const hasExistingB = countB > 0 ? 1 : 0;
-          if (hasExistingA !== hasExistingB) return hasExistingB - hasExistingA;
-
-          return metaA.index - metaB.index;
-        });
-
-        const chosenSlot = eligibleSlots[0];
-        chosenSlot.assignedStudentId = student.id;
-        currentlyAssigned.add(student.id);
-        assignedNow++;
       } else {
-        unassignedInPhase1.push(student);
+        // 2. Contiguity (no gaps between appointments)
+        const combined = [...currentDayAssignedIndices, meta.index].sort((a, b) => a - b);
+        const isContiguous = combined[combined.length - 1] - combined[0] + 1 === combined.length;
+        if (isContiguous) {
+          score += 3500; // Keep appointments strictly consecutive
+        } else if (!allowGaps) {
+          score -= 2000; // Discourage gaps when allowGaps is false
+        }
       }
+
+      // 3. Daily cap adherence in balanced mode
+      if (currentDayAssignedIndices.length < cap) {
+        score += 1500;
+      } else {
+        score -= 400; // Acceptable if needed to fit all students
+      }
+
+      // 4. Spread load evenly across days
+      score -= currentDayAssignedIndices.length * 250;
+
+      // 5. Earlier times slightly preferred
+      score -= meta.index * 10;
+
+      return score;
+    };
+
+    // =========================================================================
+    // KUHN'S MAXIMUM BIPARTITE MATCHING WITH PREFERENCE ORDERING
+    // Ensures PRIORITY 1: KUKAAN EI JÄÄ ILMAN AIKAA (0 oppilasta ilman aikaa)
+    // =========================================================================
+    const studentMatch = new Map<string, string>(); // studentId -> slotId
+    const slotMatch = new Map<string, string>();    // slotId -> studentId
+
+    const tryAugment = (studentId: string, visitedStudents: Set<string>): boolean => {
+      if (visitedStudents.has(studentId)) return false;
+      visitedStudents.add(studentId);
+
+      const student = unassignedStudents.find(s => s.id === studentId);
+      if (!student) return false;
+
+      // Candidate slots sorted by highest preference score first
+      const candidateSlots = availableSlots
+        .filter(slot => student.selectedSlotIds.includes(slot.id))
+        .sort((a, b) => getSlotPreference(b, slotMatch) - getSlotPreference(a, slotMatch));
+
+      // Step A: Try immediately available free slots in order of preference
+      for (const slot of candidateSlots) {
+        if (!slotMatch.has(slot.id)) {
+          slotMatch.set(slot.id, studentId);
+          studentMatch.set(studentId, slot.id);
+          return true;
+        }
+      }
+
+      // Step B: Augment through occupied slots (can a student currently in a slot move elsewhere?)
+      for (const slot of candidateSlots) {
+        const occupantId = slotMatch.get(slot.id)!;
+        if (tryAugment(occupantId, visitedStudents)) {
+          slotMatch.set(slot.id, studentId);
+          studentMatch.set(studentId, slot.id);
+          return true;
+        }
+      }
+
+      return false;
+    };
+
+    // Sort students by MRV (fewest choices first)
+    const sortedStudents = [...unassignedStudents].sort(
+      (a, b) => a.selectedSlotIds.length - b.selectedSlotIds.length
+    );
+
+    for (const student of sortedStudents) {
+      tryAugment(student.id, new Set<string>());
     }
 
-    // Phase 2: If fallbackToFill is enabled, place remaining students
-    // Still prioritizing no gaps if allowGaps is false!
-    if (fallbackToFill && unassignedInPhase1.length > 0) {
-      const remainingStudents = [...unassignedInPhase1];
+    // Local Hill-Climbing Optimization: improve schedule aesthetics (contiguity, start at 0)
+    // without ever reducing the number of assigned students
+    let improved = true;
+    let iterations = 0;
+    while (improved && iterations < 40) {
+      improved = false;
+      iterations++;
 
-      for (const student of remainingStudents) {
-        // First try to find a slot that still maintains contiguity (no gaps) even if exceeding initial cap
-        const contiguousSlots = newSlots.filter(slot => {
-          if (slot.assignedStudentId) return false;
-          if (!student.selectedSlotIds.includes(slot.id)) return false;
-          const meta = slotMetaMap.get(slot.id);
-          if (!meta) return false;
-          return wouldBeContiguous(meta.dayKey, meta.index);
-        });
+      for (const [studentId, currentSlotId] of Array.from(studentMatch.entries())) {
+        const student = unassignedStudents.find(s => s.id === studentId);
+        if (!student) continue;
 
-        if (contiguousSlots.length > 0) {
-          contiguousSlots.sort((a, b) => {
-            const metaA = slotMetaMap.get(a.id)!;
-            const metaB = slotMetaMap.get(b.id)!;
-            return getAssignedIndices(metaA.dayKey).length - getAssignedIndices(metaB.dayKey).length;
-          });
-          const chosen = contiguousSlots[0];
-          chosen.assignedStudentId = student.id;
-          currentlyAssigned.add(student.id);
-          assignedNow++;
-        } else if (allowGaps) {
-          // Only if user explicitly checked 'Salli hyppytunnit', allow non-contiguous gaps
-          const anySlot = newSlots.find(
-            slot => !slot.assignedStudentId && student.selectedSlotIds.includes(slot.id)
-          );
-          if (anySlot) {
-            anySlot.assignedStudentId = student.id;
-            currentlyAssigned.add(student.id);
-            assignedNow++;
+        const currentSlot = newSlots.find(s => s.id === currentSlotId);
+        if (!currentSlot) continue;
+
+        const currentScore = getSlotPreference(currentSlot, slotMatch);
+
+        // Find available alternative slots for this student
+        const altSlots = availableSlots.filter(
+          s => s.id !== currentSlotId && student.selectedSlotIds.includes(s.id) && !slotMatch.has(s.id)
+        );
+
+        for (const alt of altSlots) {
+          const altScore = getSlotPreference(alt, slotMatch);
+          if (altScore > currentScore + 100) {
+            slotMatch.delete(currentSlotId);
+            slotMatch.set(alt.id, studentId);
+            studentMatch.set(studentId, alt.id);
+            improved = true;
+            break;
           }
         }
       }
     }
+
+    // Apply the matched assignments
+    let assignedNow = 0;
+    studentMatch.forEach((slotId, studentId) => {
+      const slot = newSlots.find(s => s.id === slotId);
+      if (slot) {
+        slot.assignedStudentId = studentId;
+        assignedNow++;
+      }
+    });
 
     const updatedEvent = { ...event, slots: newSlots };
     saveEvent(updatedEvent);
     onEventUpdated(updatedEvent);
     setShowAutoSolveModal(false);
 
-    if (assignedNow > 0) {
-      confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
-      const gapNotice = allowGaps ? ' (hyppytunnit sallittu)' : ' (peräkkäiset ajat ilman hyppyjä)';
-      showToast(
-        mode === 'balanced'
-          ? `Taikasauva sijoitti ${assignedNow} oppilasta tasaisesti eri päiville${gapNotice}!`
-          : `Taikasauva sijoitti ${assignedNow} oppilasta tiiviillä aikataululla${gapNotice}!`
-      );
+    const totalUnassignedNow = submissions.filter(
+      s => !newSlots.some(slot => slot.assignedStudentId === s.id)
+    ).length;
+
+    if (totalUnassignedNow === 0) {
+      confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
+      showToast(`Täydellinen sovitus! Kaikki ${submissions.length} oppilasta saivat ajan (0 ilman aikaa)! 🪄`);
     } else {
-      showToast('Kaikki mahdolliset oppilaat on jo sijoitettu.');
+      confetti({ particleCount: 40, spread: 50, origin: { y: 0.6 } });
+      showToast(
+        `Taikasauva sijoitti ${assignedNow} oppilasta. (${totalUnassignedNow} oppilasta jäi ilman aikaa toiveiden rajallisuuden vuoksi).`
+      );
     }
   };
 
@@ -1234,6 +1209,24 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
               >
                 <X size={16} />
               </button>
+            </div>
+
+            {/* Priority 1 Promise Badge */}
+            <div style={{
+              background: '#f0fdf4',
+              border: '1.5px solid #bbf7d0',
+              borderRadius: '10px',
+              padding: '0.65rem 0.85rem',
+              marginBottom: '1.15rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.6rem',
+              fontSize: '0.85rem',
+              color: '#15803d',
+              fontWeight: 700,
+            }}>
+              <CheckCircle size={18} style={{ flexShrink: 0 }} />
+              <span>🎯 Ensisijainen sääntö: Kukaan ei jää ilman aikaa (0 oppilasta ilman aikaa). Kaikki vastanneet sijoitetaan ensin, ja aikataulut tiivistetään toissijaisesti.</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '1.25rem' }}>

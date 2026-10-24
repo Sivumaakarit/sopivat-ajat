@@ -114,6 +114,15 @@ Kun vastaukset ovat saapuneet, opettajan ei tarvitse arpoa sopivia aikoja:
 4. **Nimien näyttölogiikka:**
    * Oletus: näytetään vain etunimi (esim. *Esko*).
    * Jos luokassa on kaksi samannimistä, järjestelmä liittää automaattisesti sukunimen alkukirjaimen: *Esko M.* ja *Esko K.*
+5. **Automaattisovituksen tärkeysjärjestys (Priority Hierarchy):**
+   * **Sääntö 1 (Ehdottomasti tärkein): Kukaan ei jää ilman aikaa (0 oppilasta ilman aikaa).**
+     * Algoritmi käyttää maksimi-bipartiittisovitusta (Kuhn's Augmenting Path), joka matemaattisesti takaa, että suurin mahdollinen määrä oppilaita sijoitetaan kalenteriin. Jos jollekin oppilaalle on olemassa sopiva vapaa aika, häntä ei koskaan jätetä sijoittamatta minkään toissijaisen esteettisen syyn vuoksi.
+   * **Sääntö 2: Päivän ensimmäinen aika täytetään aina (ei odottelua päivän alussa).**
+     * Jos päivän ensimmäiseen aikaan (esim. klo 13:00) on yksikin toive, se täytetään aina ensisijaisesti, jotta opettajan ei tarvitse odotella luokassa tapaamisten alkua.
+   * **Sääntö 3: Tiiviit peräkkäiset ajat ilman hyppytunteja.**
+     * Tapaamiset sijoitetaan tiiviiksi yhtenäiseksi pötköksi ilman tyhjiä odottelureikiä keskellä iltapäivää.
+   * **Sääntö 4: Tasainen jako päiville ja kapasiteetin huomiointi.**
+     * Väljässä tilassa päiviin jätetään mahdollisuuksien mukaan liikkumavaraa (esim. 3 peräkkäistä 4:stä, 2 peräkkäistä 3:sta), mutta vain jos kaikki oppilaat mahtuvat kalenteriin.
 
 ---
 

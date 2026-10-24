@@ -517,7 +517,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                                   title="Vaihda molempien oppilaiden ajat keskenään päittäin"
                                 >
                                   <ArrowLeftRight size={12} />
-                                  <span>⇄ Vaihda päittäin ({assignedStudent.firstName})</span>
+                                  <span>Vaihda päittäin {activeStudent.firstName}</span>
                                 </button>
 
                                 <button

@@ -200,3 +200,21 @@ Kun tämä dokumentti on katselmoitu ja hyväksytty:
 4. Toteutetaan huoltajan vastauslomake (kaksoiskenttä `Esko` + `M`, päivät, "Valitse kaikki").
 5. Toteutetaan opettajan sovitustyökalu (dropdown-matching, automaattinen konfliktien esto).
 6. Toteutetaan A4-printtaus ja Wilma-jakotoiminnot.
+
+---
+
+## 8. Supabase Pilvitietokanta & Reaaliaika-arkkitehtuuri
+
+Sovellus hyödyntää täysiveristä Supabase (PostgreSQL) -pilvipalvelua taustalla, mikä mahdollistaa monen laitteen saumattoman reaaliaikakäytön:
+
+### 8.1 Local-First + Asynchronous Background Sync
+* **Nollalatenenssi:** Kaikki toimenpiteet (aikojen luonti, huoltajan vastaukset, aikasovitukset) päivittyvät paikallisesti `< 100 ms` localStorageen.
+* **Asynkroninen pilvisynkronointi:** Samalla hetkellä taustalla ajetaan non-blocking kutsu Supabaseen:
+  - `saveEventToCloud(event)` ➔ `supabase.from('events').upsert(...)`
+  - `upsertSubmission(sub)` ➔ `supabase.from('submissions').upsert(...)`
+* **Realtime-tuki:** Opettajan näkymä voi kuunnella `submissions`-taulun muutoksia reaaliajassa, jolloin uudet vastaukset näkyvät välittömästi ilman selaimen päivitystä.
+
+### 8.2 Tietokantataulut (PostgreSQL DDL)
+* **`events`**: Tallennetut kyselyt ja niiden asetukset (`id`, `admin_token`, `title`, `instructions`, `image_url`, `deadline_date`, `teacher_name`, `slots` jsonb, `is_locked`, `updated_at`).
+* **`submissions`**: Huoltajien vastaukset (`id`, `event_id`, `first_name`, `last_name_initial`, `selected_slot_ids` jsonb, `submitted_at`).
+

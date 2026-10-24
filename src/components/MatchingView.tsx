@@ -58,6 +58,11 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
   const [copiedAdminLink, setCopiedAdminLink] = useState(false);
   const [copiedParentLink, setCopiedParentLink] = useState(false);
 
+  // Auto-solve settings modal
+  const [showAutoSolveModal, setShowAutoSolveModal] = useState(false);
+  const [autoSolveMode, setAutoSolveMode] = useState<'balanced' | 'packed'>('balanced');
+  const [autoSolveFallbackToFill, setAutoSolveFallbackToFill] = useState(true);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
@@ -129,8 +134,12 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
     showToast(`Vaihdettiin päittäin: ${studentA?.firstName} ⇄ ${studentB?.firstName}`);
   };
 
-  // Magic Auto-Solver
+  // Magic Auto-Solver with balanced distribution support
   const handleAutoSolve = () => {
+    setShowAutoSolveModal(true);
+  };
+
+  const executeAutoSolve = (mode: 'balanced' | 'packed', fallbackToFill: boolean) => {
     const newSlots = [...event.slots];
     const currentlyAssigned = new Set<string>();
 
@@ -142,27 +151,93 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
       .filter(s => !currentlyAssigned.has(s.id))
       .sort((a, b) => a.selectedSlotIds.length - b.selectedSlotIds.length);
 
-    let assignedNow = 0;
+    // Calculate slots per day and max assignments per day
+    const dayTotalMap = new Map<string, number>();
+    newSlots.forEach(slot => {
+      const dayKey = slot.dateLabel || slot.date;
+      dayTotalMap.set(dayKey, (dayTotalMap.get(dayKey) || 0) + 1);
+    });
 
+    // In balanced mode: 2 if 3 options, 3 if 4 options (leave 1 buffer slot per day)
+    const dayCapMap = new Map<string, number>();
+    dayTotalMap.forEach((total, dayKey) => {
+      if (mode === 'balanced') {
+        const cap = total <= 2 ? total : total - 1;
+        dayCapMap.set(dayKey, cap);
+      } else {
+        dayCapMap.set(dayKey, total);
+      }
+    });
+
+    // Track current count per day
+    const dayCurrentCountMap = new Map<string, number>();
+    newSlots.forEach(slot => {
+      if (slot.assignedStudentId) {
+        const dayKey = slot.dateLabel || slot.date;
+        dayCurrentCountMap.set(dayKey, (dayCurrentCountMap.get(dayKey) || 0) + 1);
+      }
+    });
+
+    let assignedNow = 0;
+    const unassignedInPhase1: StudentSubmission[] = [];
+
+    // Phase 1: Assign respecting daily caps and balancing workload across days
     for (const student of studentsToAssign) {
-      const candidateSlot = newSlots.find(
-        slot => !slot.assignedStudentId && student.selectedSlotIds.includes(slot.id)
+      const eligibleSlots = newSlots.filter(
+        slot =>
+          !slot.assignedStudentId &&
+          student.selectedSlotIds.includes(slot.id) &&
+          (dayCurrentCountMap.get(slot.dateLabel || slot.date) || 0) <
+            (dayCapMap.get(slot.dateLabel || slot.date) || 99)
       );
 
-      if (candidateSlot) {
-        candidateSlot.assignedStudentId = student.id;
+      if (eligibleSlots.length > 0) {
+        // Choose slot on the day with lowest current count (balances evenly)
+        eligibleSlots.sort((a, b) => {
+          const countA = dayCurrentCountMap.get(a.dateLabel || a.date) || 0;
+          const countB = dayCurrentCountMap.get(b.dateLabel || b.date) || 0;
+          return countA - countB;
+        });
+
+        const chosenSlot = eligibleSlots[0];
+        chosenSlot.assignedStudentId = student.id;
         currentlyAssigned.add(student.id);
+        const dayKey = chosenSlot.dateLabel || chosenSlot.date;
+        dayCurrentCountMap.set(dayKey, (dayCurrentCountMap.get(dayKey) || 0) + 1);
         assignedNow++;
+      } else {
+        unassignedInPhase1.push(student);
+      }
+    }
+
+    // Phase 2: If fallbackToFill is enabled, fill remaining slots for any leftover students
+    if (fallbackToFill && unassignedInPhase1.length > 0) {
+      for (const student of unassignedInPhase1) {
+        const candidateSlot = newSlots.find(
+          slot => !slot.assignedStudentId && student.selectedSlotIds.includes(slot.id)
+        );
+        if (candidateSlot) {
+          candidateSlot.assignedStudentId = student.id;
+          currentlyAssigned.add(student.id);
+          const dayKey = candidateSlot.dateLabel || candidateSlot.date;
+          dayCurrentCountMap.set(dayKey, (dayCurrentCountMap.get(dayKey) || 0) + 1);
+          assignedNow++;
+        }
       }
     }
 
     const updatedEvent = { ...event, slots: newSlots };
     saveEvent(updatedEvent);
     onEventUpdated(updatedEvent);
+    setShowAutoSolveModal(false);
 
     if (assignedNow > 0) {
       confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
-      showToast(`Taikasauva sijoitti ${assignedNow} oppilasta aikoihin!`);
+      showToast(
+        mode === 'balanced'
+          ? `Taikasauva sijoitti ${assignedNow} oppilasta väljällä aikataululla!`
+          : `Taikasauva sijoitti ${assignedNow} oppilasta tiiviillä aikataululla!`
+      );
     } else {
       showToast('Kaikki mahdolliset oppilaat on jo sijoitettu.');
     }
@@ -708,7 +783,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                             const displayName = getStudentDisplayName(candidate, submissions);
                             return (
                               <option key={candidate.id} value={candidate.id}>
-                                {displayName} {isAlreadyAssignedElsewhere ? '(jo toisella ajalla)' : '(vapaana)'}
+                                {displayName}{isAlreadyAssignedElsewhere ? ' (jo toisella ajalla)' : ''}
                               </option>
                             );
                           })}
@@ -968,6 +1043,161 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
               </button>
               <button type="button" className="btn-primary" onClick={handleSaveManual}>
                 Tallenna oppilas
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auto-Solve Settings & Confirmation Modal */}
+      {showAutoSolveModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          padding: '1rem',
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: '540px', padding: '1.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <div style={{ background: '#f5f3ff', color: '#7c3aed', padding: '0.5rem', borderRadius: '10px' }}>
+                  <Wand2 size={22} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                    Automaattisovitus
+                  </h3>
+                  <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0 }}>
+                    Valitse miten taikasauva sijoittaa toiveet kalenteriin
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="select-all-btn"
+                onClick={() => setShowAutoSolveModal(false)}
+                aria-label="Sulje"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '1.5rem' }}>
+              {/* Option 1: Balanced & Spaced */}
+              <label style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.75rem',
+                padding: '1rem',
+                borderRadius: '12px',
+                border: `2px solid ${autoSolveMode === 'balanced' ? '#7c3aed' : '#e2e8f0'}`,
+                background: autoSolveMode === 'balanced' ? '#faf5ff' : '#ffffff',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}>
+                <input
+                  type="radio"
+                  name="autoSolveMode"
+                  checked={autoSolveMode === 'balanced'}
+                  onChange={() => setAutoSolveMode('balanced')}
+                  style={{ marginTop: '3px' }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>
+                      🌿 Tasainen & väljä aikataulu
+                    </strong>
+                    <span style={{
+                      background: '#7c3aed',
+                      color: '#ffffff',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      padding: '2px 7px',
+                      borderRadius: '999px',
+                    }}>
+                      Suositus
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '0.83rem', color: '#64748b', margin: '0.25rem 0 0.5rem 0', lineHeight: 1.45 }}>
+                    Ei ahda päiviä täyteen (esim. max 2 jos 3 vaihtoehtoa, max 3 jos 4 vaihtoehtoa) ja jakaa tapaamiset tasaisesti eri päiville.
+                  </p>
+                  {autoSolveMode === 'balanced' && (
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      marginTop: '0.5rem',
+                      paddingTop: '0.5rem',
+                      borderTop: '1px dashed #e9d5ff',
+                      fontSize: '0.82rem',
+                      color: '#475569',
+                      cursor: 'pointer',
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={autoSolveFallbackToFill}
+                        onChange={e => setAutoSolveFallbackToFill(e.target.checked)}
+                      />
+                      <span>Täytä varalohkot vain, jos oppilaat eivät muuten mahdu</span>
+                    </label>
+                  )}
+                </div>
+              </label>
+
+              {/* Option 2: Packed */}
+              <label style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.75rem',
+                padding: '1rem',
+                borderRadius: '12px',
+                border: `2px solid ${autoSolveMode === 'packed' ? '#7c3aed' : '#e2e8f0'}`,
+                background: autoSolveMode === 'packed' ? '#faf5ff' : '#ffffff',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}>
+                <input
+                  type="radio"
+                  name="autoSolveMode"
+                  checked={autoSolveMode === 'packed'}
+                  onChange={() => setAutoSolveMode('packed')}
+                  style={{ marginTop: '3px' }}
+                />
+                <div style={{ flex: 1 }}>
+                  <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>
+                    ⚡ Täytä päivät täyteen (Tiivis)
+                  </strong>
+                  <p style={{ fontSize: '0.83rem', color: '#64748b', margin: '0.25rem 0 0 0', lineHeight: 1.45 }}>
+                    Täyttää kaikki päivät ja mahdolliset vapaat ajat maksimikapasiteetilla heti järjestyksessä.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setShowAutoSolveModal(false)}
+              >
+                Peruuta
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                style={{ background: '#7c3aed', border: 'none' }}
+                onClick={() => executeAutoSolve(autoSolveMode, autoSolveFallbackToFill)}
+              >
+                <Wand2 size={16} />
+                <span>Suorita automaattisovitus</span>
               </button>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { ScheduleEvent, StudentSubmission, ViewMode } from '../types';
 import { groupSlotsByDate } from '../utils/timeUtils';
+import { normalizeInstructions } from '../services/storage';
 import confetti from 'canvas-confetti';
 import {
   Check,
@@ -367,7 +368,7 @@ export const ParentView: React.FC<ParentViewProps> = ({
           )}
           <div style={{ flex: 1 }}>
             <h1 className="paper-title">{event.title}</h1>
-            <div className="paper-instructions">{event.instructions}</div>
+            <div className="paper-instructions">{normalizeInstructions(event.instructions)}</div>
           </div>
         </div>
 

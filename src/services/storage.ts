@@ -44,6 +44,19 @@ export const INITIAL_SUBMISSIONS: StudentSubmission[] = [];
 const STORAGE_KEY_EVENT = 'sopivat_ajat_clean_event_v3';
 const STORAGE_KEY_SUBMISSIONS = 'sopivat_ajat_clean_submissions_v3';
 
+export function normalizeInstructions(instructions: string): string {
+  if (!instructions) return instructions;
+  let text = instructions;
+  // Ensure the participants sentence follows exact format:
+  // "Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t)."
+  text = text.replace(
+    /Yhteiseen keskusteluun osallistuvat[^\n.]+([.]?)/g,
+    'Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t).'
+  );
+  text = text.replace('kodin edustaja.', 'kodin edustaja(t).');
+  return text;
+}
+
 export function getEvent(): ScheduleEvent {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_EVENT);
@@ -54,8 +67,7 @@ export function getEvent(): ScheduleEvent {
     const parsed: ScheduleEvent = JSON.parse(raw);
     parsed.slots = sortSlotsChronologically(parsed.slots || []);
     if (parsed.instructions) {
-      parsed.instructions = parsed.instructions.replace('kodin edustaja.', 'kodin edustaja(t).');
-      parsed.instructions = parsed.instructions.replace('oppilas, huoltaja ja opettaja.', 'oppilas, opettaja ja kodin edustaja(t).');
+      parsed.instructions = normalizeInstructions(parsed.instructions);
     }
     return parsed;
   } catch {
@@ -66,6 +78,9 @@ export function getEvent(): ScheduleEvent {
 export function saveEvent(event: ScheduleEvent): void {
   // Always guarantee slots are chronologically sorted across the entire app
   event.slots = sortSlotsChronologically(event.slots || []);
+  if (event.instructions) {
+    event.instructions = normalizeInstructions(event.instructions);
+  }
 
   try {
     localStorage.setItem(STORAGE_KEY_EVENT, JSON.stringify(event));
@@ -81,12 +96,13 @@ export function saveEvent(event: ScheduleEvent): void {
 
 export async function saveEventToCloud(event: ScheduleEvent): Promise<boolean> {
   const sortedSlots = sortSlotsChronologically(event.slots || []);
+  const normalizedInstructions = normalizeInstructions(event.instructions || '');
   try {
     const { error } = await supabase.from('events').upsert({
       id: event.id,
       admin_token: event.adminToken,
       title: event.title,
-      instructions: event.instructions,
+      instructions: normalizedInstructions,
       image_url: event.imageUrl,
       slot_duration_minutes: event.slotDurationMinutes,
       min_selections_required: event.minSelectionsRequired,
@@ -122,7 +138,7 @@ export async function fetchEventFromCloud(id: string): Promise<ScheduleEvent | n
       id: data.id,
       adminToken: data.admin_token || '',
       title: data.title,
-      instructions: data.instructions || '',
+      instructions: normalizeInstructions(data.instructions || ''),
       imageUrl: data.image_url || '',
       slotDurationMinutes: data.slot_duration_minutes || 20,
       minSelectionsRequired: data.min_selections_required || 3,

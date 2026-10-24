@@ -49,7 +49,7 @@ Sovellus noudattaa tiukasti *Responsible App*-, *GeoVitonen*- ja *Visual Excelle
 
 #### A. Asetukset & Sisältö:
 * **Tapahtuman nimi:** Vapaa tekstikenttä (esim. *"Arviointikeskustelujen varaukset syksy 2026"*).
-* **Ohjetekstilaatikko:** Valmiiksi esitäytetty ystävällinen viestipohja, jota voi muokata suoraan.
+* **Ohjetekstilaatikko:** Valmiiksi esitäytetty ystävällinen viestipohja (sisältää standardoidun tekstin: *"Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t)."*), jota voi muokata vapaasti.
 * **Kuvan lataus:** Voi ladata oman kuvan tai valita hauskan oletuskuvituksen (esim. Snoopy / teemakuva).
 * **Minimivalintojen määrä:** Asetettava lukuarvo (oletus: `3`).
 * **Tapaamisen oletuskesto:** Asetettava minuuttiluku (oletus: `20 min`).

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { ScheduleEvent, StudentSubmission, ViewMode } from '../types';
+import type { ScheduleEvent, StudentSubmission, ViewMode, TimeSlot } from '../types';
 import { getStudentDisplayName, sortSlotsChronologically } from '../utils/timeUtils';
 import { assignStudentToSlot, saveEvent, addSubmission, createNewOfficialEvent } from '../services/storage';
 import confetti from 'canvas-confetti';
@@ -61,6 +61,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
   // Auto-solve settings modal
   const [showAutoSolveModal, setShowAutoSolveModal] = useState(false);
   const [autoSolveMode, setAutoSolveMode] = useState<'balanced' | 'packed'>('balanced');
+  const [autoSolveAllowGaps, setAutoSolveAllowGaps] = useState(false);
   const [autoSolveFallbackToFill, setAutoSolveFallbackToFill] = useState(true);
 
   const showToast = (msg: string) => {
@@ -139,7 +140,11 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
     setShowAutoSolveModal(true);
   };
 
-  const executeAutoSolve = (mode: 'balanced' | 'packed', fallbackToFill: boolean) => {
+  const executeAutoSolve = (
+    mode: 'balanced' | 'packed',
+    allowGaps: boolean,
+    fallbackToFill: boolean
+  ) => {
     const newSlots = [...event.slots];
     const currentlyAssigned = new Set<string>();
 
@@ -151,77 +156,160 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
       .filter(s => !currentlyAssigned.has(s.id))
       .sort((a, b) => a.selectedSlotIds.length - b.selectedSlotIds.length);
 
-    // Calculate slots per day and max assignments per day
-    const dayTotalMap = new Map<string, number>();
+    // Group and sort slots chronologically per day
+    const daySlotsMap = new Map<string, TimeSlot[]>();
     newSlots.forEach(slot => {
       const dayKey = slot.dateLabel || slot.date;
-      dayTotalMap.set(dayKey, (dayTotalMap.get(dayKey) || 0) + 1);
+      if (!daySlotsMap.has(dayKey)) {
+        daySlotsMap.set(dayKey, []);
+      }
+      daySlotsMap.get(dayKey)!.push(slot);
     });
 
-    // In balanced mode: 2 if 3 options, 3 if 4 options (leave 1 buffer slot per day)
+    daySlotsMap.forEach(daySlots => {
+      daySlots.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    });
+
+    // Map each slot ID to its day and index within that day
+    const slotMetaMap = new Map<string, { dayKey: string; index: number; totalInDay: number }>();
+    daySlotsMap.forEach((daySlots, dayKey) => {
+      daySlots.forEach((slot, index) => {
+        slotMetaMap.set(slot.id, { dayKey, index, totalInDay: daySlots.length });
+      });
+    });
+
+    // Determine target cap per day:
+    // Balanced: 1 if 1, 2 if 2, 2 if 3, 3 if 4, total-1 if total >= 5
+    // Packed: total
     const dayCapMap = new Map<string, number>();
-    dayTotalMap.forEach((total, dayKey) => {
+    daySlotsMap.forEach((daySlots, dayKey) => {
+      const total = daySlots.length;
       if (mode === 'balanced') {
-        const cap = total <= 2 ? total : total - 1;
-        dayCapMap.set(dayKey, cap);
+        if (total === 1) {
+          dayCapMap.set(dayKey, 1);
+        } else if (total === 2) {
+          dayCapMap.set(dayKey, 2);
+        } else if (total === 3) {
+          dayCapMap.set(dayKey, 2); // 2 peräkkäistä kolmesta
+        } else if (total === 4) {
+          dayCapMap.set(dayKey, 3); // 3 peräkkäistä neljästä
+        } else {
+          dayCapMap.set(dayKey, total - 1);
+        }
       } else {
         dayCapMap.set(dayKey, total);
       }
     });
 
-    // Track current count per day
-    const dayCurrentCountMap = new Map<string, number>();
-    newSlots.forEach(slot => {
-      if (slot.assignedStudentId) {
-        const dayKey = slot.dateLabel || slot.date;
-        dayCurrentCountMap.set(dayKey, (dayCurrentCountMap.get(dayKey) || 0) + 1);
-      }
-    });
+    // Helper to get currently assigned slot indices for a day
+    const getAssignedIndices = (dayKey: string): number[] => {
+      const slots = daySlotsMap.get(dayKey) || [];
+      const indices: number[] = [];
+      slots.forEach((s, idx) => {
+        if (s.assignedStudentId) indices.push(idx);
+      });
+      return indices.sort((a, b) => a - b);
+    };
+
+    // Helper to check if adding index to day maintains contiguity (no gaps in between)
+    const wouldBeContiguous = (dayKey: string, newIndex: number): boolean => {
+      if (allowGaps) return true;
+      const current = getAssignedIndices(dayKey);
+      if (current.length === 0) return true;
+      const combined = [...current, newIndex].sort((a, b) => a - b);
+      const min = combined[0];
+      const max = combined[combined.length - 1];
+      // Consecutive without holes if span equals count
+      return max - min + 1 === combined.length;
+    };
 
     let assignedNow = 0;
     const unassignedInPhase1: StudentSubmission[] = [];
 
-    // Phase 1: Assign respecting daily caps and balancing workload across days
+    // Phase 1: Assign respecting daily cap, no-gap contiguity, and balancing evenly across days
     for (const student of studentsToAssign) {
-      const eligibleSlots = newSlots.filter(
-        slot =>
-          !slot.assignedStudentId &&
-          student.selectedSlotIds.includes(slot.id) &&
-          (dayCurrentCountMap.get(slot.dateLabel || slot.date) || 0) <
-            (dayCapMap.get(slot.dateLabel || slot.date) || 99)
-      );
+      const eligibleSlots = newSlots.filter(slot => {
+        if (slot.assignedStudentId) return false;
+        if (!student.selectedSlotIds.includes(slot.id)) return false;
+
+        const meta = slotMetaMap.get(slot.id);
+        if (!meta) return false;
+
+        const currentAssigned = getAssignedIndices(meta.dayKey);
+        const cap = dayCapMap.get(meta.dayKey) || meta.totalInDay;
+
+        // Daily cap check
+        if (currentAssigned.length >= cap) return false;
+
+        // Contiguity check (no gaps in between)
+        return wouldBeContiguous(meta.dayKey, meta.index);
+      });
 
       if (eligibleSlots.length > 0) {
-        // Choose slot on the day with lowest current count (balances evenly)
+        // Sort candidate slots:
+        // 1. Day with fewest assignments so far (spreads appointments evenly across all days)
+        // 2. Extending an existing active block
+        // 3. Earlier slot index
         eligibleSlots.sort((a, b) => {
-          const countA = dayCurrentCountMap.get(a.dateLabel || a.date) || 0;
-          const countB = dayCurrentCountMap.get(b.dateLabel || b.date) || 0;
-          return countA - countB;
+          const metaA = slotMetaMap.get(a.id)!;
+          const metaB = slotMetaMap.get(b.id)!;
+
+          const countA = getAssignedIndices(metaA.dayKey).length;
+          const countB = getAssignedIndices(metaB.dayKey).length;
+
+          if (countA !== countB) return countA - countB; // balance across days
+
+          const hasExistingA = countA > 0 ? 1 : 0;
+          const hasExistingB = countB > 0 ? 1 : 0;
+          if (hasExistingA !== hasExistingB) return hasExistingB - hasExistingA;
+
+          return metaA.index - metaB.index;
         });
 
         const chosenSlot = eligibleSlots[0];
         chosenSlot.assignedStudentId = student.id;
         currentlyAssigned.add(student.id);
-        const dayKey = chosenSlot.dateLabel || chosenSlot.date;
-        dayCurrentCountMap.set(dayKey, (dayCurrentCountMap.get(dayKey) || 0) + 1);
         assignedNow++;
       } else {
         unassignedInPhase1.push(student);
       }
     }
 
-    // Phase 2: If fallbackToFill is enabled, fill remaining slots for any leftover students
+    // Phase 2: If fallbackToFill is enabled, place remaining students
+    // Still prioritizing no gaps if allowGaps is false!
     if (fallbackToFill && unassignedInPhase1.length > 0) {
-      for (const student of unassignedInPhase1) {
-        const candidateSlot = newSlots.find(
-          slot => !slot.assignedStudentId && student.selectedSlotIds.includes(slot.id)
-        );
-        if (candidateSlot) {
-          candidateSlot.assignedStudentId = student.id;
+      const remainingStudents = [...unassignedInPhase1];
+
+      for (const student of remainingStudents) {
+        // First try to find a slot that still maintains contiguity (no gaps) even if exceeding initial cap
+        const contiguousSlots = newSlots.filter(slot => {
+          if (slot.assignedStudentId) return false;
+          if (!student.selectedSlotIds.includes(slot.id)) return false;
+          const meta = slotMetaMap.get(slot.id);
+          if (!meta) return false;
+          return wouldBeContiguous(meta.dayKey, meta.index);
+        });
+
+        if (contiguousSlots.length > 0) {
+          contiguousSlots.sort((a, b) => {
+            const metaA = slotMetaMap.get(a.id)!;
+            const metaB = slotMetaMap.get(b.id)!;
+            return getAssignedIndices(metaA.dayKey).length - getAssignedIndices(metaB.dayKey).length;
+          });
+          const chosen = contiguousSlots[0];
+          chosen.assignedStudentId = student.id;
           currentlyAssigned.add(student.id);
-          const dayKey = candidateSlot.dateLabel || candidateSlot.date;
-          dayCurrentCountMap.set(dayKey, (dayCurrentCountMap.get(dayKey) || 0) + 1);
           assignedNow++;
+        } else if (allowGaps) {
+          // Only if user explicitly checked 'Salli hyppytunnit', allow non-contiguous gaps
+          const anySlot = newSlots.find(
+            slot => !slot.assignedStudentId && student.selectedSlotIds.includes(slot.id)
+          );
+          if (anySlot) {
+            anySlot.assignedStudentId = student.id;
+            currentlyAssigned.add(student.id);
+            assignedNow++;
+          }
         }
       }
     }
@@ -233,10 +321,11 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
 
     if (assignedNow > 0) {
       confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+      const gapNotice = allowGaps ? ' (hyppytunnit sallittu)' : ' (peräkkäiset ajat ilman hyppyjä)';
       showToast(
         mode === 'balanced'
-          ? `Taikasauva sijoitti ${assignedNow} oppilasta väljällä aikataululla!`
-          : `Taikasauva sijoitti ${assignedNow} oppilasta tiiviillä aikataululla!`
+          ? `Taikasauva sijoitti ${assignedNow} oppilasta tasaisesti eri päiville${gapNotice}!`
+          : `Taikasauva sijoitti ${assignedNow} oppilasta tiiviillä aikataululla${gapNotice}!`
       );
     } else {
       showToast('Kaikki mahdolliset oppilaat on jo sijoitettu.');
@@ -1090,7 +1179,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '1.25rem' }}>
               {/* Option 1: Balanced & Spaced */}
               <label style={{
                 display: 'flex',
@@ -1126,29 +1215,9 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                       Suositus
                     </span>
                   </div>
-                  <p style={{ fontSize: '0.83rem', color: '#64748b', margin: '0.25rem 0 0.5rem 0', lineHeight: 1.45 }}>
-                    Ei ahda päiviä täyteen (esim. max 2 jos 3 vaihtoehtoa, max 3 jos 4 vaihtoehtoa) ja jakaa tapaamiset tasaisesti eri päiville.
+                  <p style={{ fontSize: '0.83rem', color: '#64748b', margin: '0.25rem 0 0 0', lineHeight: 1.45 }}>
+                    Jakaa ajat tasaisesti eri päiville ja sijoittaa peräkkäin ilman täyteen ahtamista (esim. 3 peräkkäistä 4:stä, 2 peräkkäistä 3:sta, 1 jos vain yksi vaihtoehto).
                   </p>
-                  {autoSolveMode === 'balanced' && (
-                    <label style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      marginTop: '0.5rem',
-                      paddingTop: '0.5rem',
-                      borderTop: '1px dashed #e9d5ff',
-                      fontSize: '0.82rem',
-                      color: '#475569',
-                      cursor: 'pointer',
-                    }}>
-                      <input
-                        type="checkbox"
-                        checked={autoSolveFallbackToFill}
-                        onChange={e => setAutoSolveFallbackToFill(e.target.checked)}
-                      />
-                      <span>Täytä varalohkot vain, jos oppilaat eivät muuten mahdu</span>
-                    </label>
-                  )}
                 </div>
               </label>
 
@@ -1176,10 +1245,64 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                     ⚡ Täytä päivät täyteen (Tiivis)
                   </strong>
                   <p style={{ fontSize: '0.83rem', color: '#64748b', margin: '0.25rem 0 0 0', lineHeight: 1.45 }}>
-                    Täyttää kaikki päivät ja mahdolliset vapaat ajat maksimikapasiteetilla heti järjestyksessä.
+                    Täyttää kaikki päivät ja mahdolliset vapaat ajat maksimikapasiteetilla heti peräkkäin.
                   </p>
                 </div>
               </label>
+            </div>
+
+            {/* Special Options / Erikoistoiminnot */}
+            <div style={{
+              background: '#f8fafc',
+              border: '1.5px solid #e2e8f0',
+              borderRadius: '12px',
+              padding: '1rem',
+              marginBottom: '1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem',
+            }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Erikoistoiminnot & ehdot:
+              </span>
+
+              {/* Gaps checkbox (default false) */}
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={autoSolveAllowGaps}
+                  onChange={e => setAutoSolveAllowGaps(e.target.checked)}
+                  style={{ marginTop: '2px' }}
+                />
+                <div style={{ flex: 1 }}>
+                  <strong style={{ fontSize: '0.88rem', color: '#0f172a' }}>
+                    Salli hyppytunnit (tyhjät välit aikojen väliin)
+                  </strong>
+                  <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.15rem 0 0 0', lineHeight: 1.4 }}>
+                    Oletuksena pois päältä: ajat sijoitetaan aina tiiviisti peräkkäin ilman turhia odotteluvälejä. Rastita tämä vain, jos haluat erikseen sallia tyhjän välin saman päivän tapaamisten väliin.
+                  </p>
+                </div>
+              </label>
+
+              {/* Fallback to fill in balanced mode */}
+              {autoSolveMode === 'balanced' && (
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', cursor: 'pointer', paddingTop: '0.5rem', borderTop: '1px dashed #cbd5e1' }}>
+                  <input
+                    type="checkbox"
+                    checked={autoSolveFallbackToFill}
+                    onChange={e => setAutoSolveFallbackToFill(e.target.checked)}
+                    style={{ marginTop: '2px' }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <strong style={{ fontSize: '0.88rem', color: '#0f172a' }}>
+                      Täytä varalohkot vain, jos oppilaat eivät muuten mahdu
+                    </strong>
+                    <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.15rem 0 0 0', lineHeight: 1.4 }}>
+                      Jos joku oppilas jäisi muuten ilman aikaa, hänet voidaan sijoittaa vapaaseen lisäaikaan peräkkäiseksi jatkoksi.
+                    </p>
+                  </div>
+                </label>
+              )}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
@@ -1194,7 +1317,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                 type="button"
                 className="btn-primary"
                 style={{ background: '#7c3aed', border: 'none' }}
-                onClick={() => executeAutoSolve(autoSolveMode, autoSolveFallbackToFill)}
+                onClick={() => executeAutoSolve(autoSolveMode, autoSolveAllowGaps, autoSolveFallbackToFill)}
               >
                 <Wand2 size={16} />
                 <span>Suorita automaattisovitus</span>

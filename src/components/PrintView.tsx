@@ -15,7 +15,8 @@ export const PrintView: React.FC<PrintViewProps> = ({ event, submissions, onBack
     window.print();
   };
 
-  const sortedSlots = sortSlotsChronologically(event.slots);
+  // Only include confirmed/assigned slots (omit free slots as requested)
+  const assignedSlots = sortSlotsChronologically(event.slots.filter(s => s.assignedStudentId));
 
   return (
     <div className="main-layout">
@@ -58,25 +59,33 @@ export const PrintView: React.FC<PrintViewProps> = ({ event, submissions, onBack
             </tr>
           </thead>
           <tbody>
-            {sortedSlots.map(slot => {
-              const student = submissions.find(s => s.id === slot.assignedStudentId);
-              const displayName = student ? getStudentDisplayName(student, submissions) : '— (Vapaa) —';
+            {assignedSlots.length === 0 ? (
+              <tr>
+                <td colSpan={3} style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b', fontStyle: 'italic' }}>
+                  Ei vielä vahvistettuja varauksia tulostettavaksi.
+                </td>
+              </tr>
+            ) : (
+              assignedSlots.map(slot => {
+                const student = submissions.find(s => s.id === slot.assignedStudentId);
+                const displayName = student ? getStudentDisplayName(student, submissions) : 'Oppilas';
 
-              return (
-                <tr key={slot.id}>
-                  <td style={{ border: '1px solid #e2e8f0', padding: '8px 12px', fontWeight: 600 }}>
-                    {slot.dateLabel || slot.date}
-                    {slot.section && <span style={{ display: 'block', fontSize: '0.75rem', color: '#666' }}>{slot.section}</span>}
-                  </td>
-                  <td style={{ border: '1px solid #e2e8f0', padding: '8px 12px', fontWeight: 700 }}>
-                    {slot.startTime} – {slot.endTime}
-                  </td>
-                  <td style={{ border: '1px solid #e2e8f0', padding: '8px 12px', fontWeight: student ? 700 : 400, color: student ? '#000' : '#888' }}>
-                    {displayName}
-                  </td>
-                </tr>
-              );
-            })}
+                return (
+                  <tr key={slot.id}>
+                    <td style={{ border: '1px solid #e2e8f0', padding: '8px 12px', fontWeight: 600 }}>
+                      {slot.dateLabel || slot.date}
+                      {slot.section && <span style={{ display: 'block', fontSize: '0.75rem', color: '#666' }}>{slot.section}</span>}
+                    </td>
+                    <td style={{ border: '1px solid #e2e8f0', padding: '8px 12px', fontWeight: 700 }}>
+                      {slot.startTime} – {slot.endTime}
+                    </td>
+                    <td style={{ border: '1px solid #e2e8f0', padding: '8px 12px', fontWeight: 700, color: '#000' }}>
+                      {displayName}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
 

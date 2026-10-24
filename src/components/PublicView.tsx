@@ -49,14 +49,15 @@ export const PublicView: React.FC<PublicViewProps> = ({
   };
 
   const handleCopyWilma = () => {
-    const wilmaMsg = `Hei huoltajat!\n\nLuokan arviointikeskustelujen aikataulu on nyt valmis ja vahvistettu!\n\nNäette oman perheenne vahvistetun ajan alla olevasta linkistä:\n${shareUrl}\n\n💡 Tuli esteitä tai toive vaihtaa päittäin?\nAikatauluja saa totta kai vielä vaihtaa keskenään! Jos sovitte toisen perheen kanssa vaihdosta päittäin, laittakaa siitä vain lyhyt viesti ${teacherTarget} Wilmassa, niin opettaja päivittää sen aikatauluun. Näinkin joskus sattuu ja se on täysin okei! 😊\n\nTervetuloa tapaamiseen omassa luokassamme sovittuna aikana!\n\nYstävällisin terveisin,\n${event.teacherName || 'Esko'}`;
+    const wilmaMsg = `Hei huoltajat!\n\nLuokan arviointikeskustelujen aikataulu on nyt valmis ja vahvistettu!\n\nNäette oman perheenne vahvistetun ajan alla olevasta linkistä:\n${shareUrl}\n\nAikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, laittakaa siitä vielä lyhyt viesti ${teacherTarget} Wilmassa 😊.\n\nTervetuloa tapaamiseen omassa luokassamme sovittuna aikana!\n\nYstävällisin terveisin,\n${event.teacherName || 'Esko'}`;
 
     navigator.clipboard.writeText(wilmaMsg);
     setCopiedWilma(true);
     setTimeout(() => setCopiedWilma(false), 2500);
   };
 
-  const sortedSlots = sortSlotsChronologically(event.slots);
+  // Only show confirmed/assigned slots (omit free slots as requested)
+  const sortedSlots = sortSlotsChronologically(event.slots.filter(s => s.assignedStudentId));
   const distinctDays = Array.from(new Set(sortedSlots.map(s => s.dateLabel || s.date)));
 
   // Find all matched slots for user's search
@@ -451,11 +452,8 @@ export const PublicView: React.FC<PublicViewProps> = ({
             <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.4rem 0' }}>
               Tuli esteitä tai toive vaihtaa päittäin?
             </h3>
-            <p style={{ color: '#475569', fontSize: '0.92rem', lineHeight: 1.6, margin: '0 0 0.5rem 0' }}>
-              Aikatauluja saa totta kai vielä vaihtaa keskenään! Jos teille tulee myöhemmin este tai toivotte toista aikaa, voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin.
-            </p>
             <p style={{ color: '#475569', fontSize: '0.92rem', lineHeight: 1.6, margin: 0 }}>
-              Kun olette sopineet vaihdosta keskenänne, laittakaa siitä vain lyhyt viesti <strong>{teacherTarget}</strong> Wilmassa – opettaja päivittää sen sitten aikatauluun. Näinkin joskus sattuu ja se on täysin okei! 😊
+              Aikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, laittakaa siitä vielä lyhyt viesti <strong>{teacherTarget}</strong> Wilmassa 😊.
             </p>
           </div>
         </div>

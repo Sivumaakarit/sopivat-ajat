@@ -50,7 +50,7 @@ Sovellus noudattaa tiukasti *Responsible App*-, *GeoVitonen*- ja *Visual Excelle
 #### A. Asetukset & Sisältö:
 * **Tapahtuman nimi:** Vapaa tekstikenttä (esim. *"Arviointikeskustelujen varaukset syksy 2026"*).
 * **Ohjetekstilaatikko:** Valmiiksi esitäytetty ystävällinen viestipohja (sisältää standardoidun tekstin: *"Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t)."*), jota voi muokata vapaasti.
-* **Kuvan lataus:** Voi ladata oman kuvan tai valita hauskan oletuskuvituksen (esim. Snoopy / teemakuva).
+* **Kuvan lataus:** Voi ladata oman kuvan tai käyttää virallista Sopivat ajat -kalenterilogoa (`/logo.svg`).
 * **Minimivalintojen määrä:** Asetettava lukuarvo (oletus: `3`).
 * **Tapaamisen oletuskesto:** Asetettava minuuttiluku (oletus: `20 min`).
 
@@ -76,7 +76,7 @@ Sovellus noudattaa tiukasti *Responsible App*-, *GeoVitonen*- ja *Visual Excelle
 
 1. **Aloitus ilman kirjautumista:**
    * Aukeaa suoraan Wilmasta saatuun linkkiin.
-   * Ylhäällä näkyvät opettajan ohjeet, Snoopy-kuva ja palautuksen määräaika.
+   * Ylhäällä näkyvät opettajan ohjeet, Sopivat ajat -kalenterilogo ja palautuksen määräaika.
 2. **Oppilaan nimen syöttö (GDPR-optimoitu):**
    * Kenttä 1: `Oppilaan etunimi` (esim. *Esko*)
    * Kenttä 2: `Sukunimen 1. kirjain` (max 1 merkki, automaattinen suuraakkonen, esim. *M*)
@@ -151,7 +151,7 @@ export interface ScheduleEvent {
   adminToken: string;     // Salainen avain opettajan hallintanäkymään
   title: string;          // esim. "Arviointikeskustelujen varaukset syksy 2026"
   instructions: string;   // Ohjeteksti
-  imageUrl?: string;      // Snoopy tai teemakuva
+  imageUrl?: string;      // Sopivat ajat -logo (/logo.svg) tai oma kuva
   slotDurationMinutes: number; // esim. 20
   minSelectionsRequired: number; // esim. 3
   deadlineDate?: string;  // Viimeinen palautuspäivä

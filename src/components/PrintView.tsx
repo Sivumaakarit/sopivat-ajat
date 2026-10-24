@@ -1,6 +1,7 @@
 import React from 'react';
 import type { ScheduleEvent, StudentSubmission } from '../types';
 import { getStudentDisplayName, sortSlotsChronologically } from '../utils/timeUtils';
+import { normalizeImageUrl } from '../services/storage';
 import { Printer, ArrowLeft } from 'lucide-react';
 
 interface PrintViewProps {
@@ -43,11 +44,9 @@ export const PrintView: React.FC<PrintViewProps> = ({ event, submissions, onBack
             </p>
           </div>
 
-          {event.imageUrl && (
-            <div style={{ width: '70px', height: '70px' }}>
-              <img src={event.imageUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-            </div>
-          )}
+          <div style={{ width: '70px', height: '70px' }}>
+            <img src={normalizeImageUrl(event.imageUrl)} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          </div>
         </div>
 
         <table className="matching-table" style={{ width: '100%', borderCollapse: 'collapse' }}>

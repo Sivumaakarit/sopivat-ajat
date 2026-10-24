@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { ScheduleEvent, StudentSubmission } from '../types';
 import { getStudentDisplayName, sortSlotsChronologically } from '../utils/timeUtils';
+import { normalizeImageUrl } from '../services/storage';
 import { Search, Calendar, Clock, CheckCircle } from 'lucide-react';
 
 interface PublicViewProps {
@@ -28,11 +29,9 @@ export const PublicView: React.FC<PublicViewProps> = ({ event, submissions }) =>
       {/* Header Card */}
       <div className="card">
         <div className="paper-header-box" style={{ borderBottom: 'none', marginBottom: '0.5rem', paddingBottom: 0 }}>
-          {event.imageUrl && (
-            <div className="snoopy-avatar">
-              <img src={event.imageUrl} alt="Kuvitus" />
-            </div>
-          )}
+          <div className="brand-avatar" title="Sopivat ajat -logo">
+            <img src={normalizeImageUrl(event.imageUrl)} alt="Sopivat ajat" />
+          </div>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#f0fdf4', color: '#16a34a', padding: '3px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.5rem' }}>
               <CheckCircle size={14} />

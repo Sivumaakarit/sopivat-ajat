@@ -46,9 +46,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
       <div className="header-container">
         {/* Brand */}
         <div className="brand-badge" onClick={() => handleNavClick('creator')} style={{ cursor: 'pointer' }}>
-          <div className="brand-icon">
-            <Calendar size={20} />
-          </div>
+          <img src="/logo.svg" alt="Sopivat ajat" style={{ width: '30px', height: '30px', borderRadius: '7px' }} />
           <span>Sopivat ajat</span>
         </div>
 

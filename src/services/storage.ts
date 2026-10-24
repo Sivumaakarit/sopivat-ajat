@@ -2,26 +2,18 @@ import type { ScheduleEvent, StudentSubmission } from '../types';
 import { supabase } from './supabaseClient';
 import { sortSlotsChronologically } from '../utils/timeUtils';
 
-export const SNOOPY_ILLUSTRATION = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 200" fill="none" stroke="%231e293b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Cute Snoopy-style puppy reading on roof -->
-  <path d="M40 160 L80 120 L120 160 Z" fill="%23ef4444" stroke="%23b91c1c"/>
-  <rect x="50" y="160" width="60" height="35" fill="%23dc2626" stroke="%23b91c1c"/>
-  <!-- Dog body lying on roof -->
-  <ellipse cx="80" cy="115" rx="30" ry="14" fill="white"/>
-  <!-- Dog head -->
-  <ellipse cx="65" cy="100" rx="16" ry="12" fill="white"/>
-  <circle cx="53" cy="98" r="4" fill="%231e293b"/>
-  <!-- Ear -->
-  <path d="M72 95 C78 90 85 105 76 112 Z" fill="%231e293b"/>
-  <!-- Nose -->
-  <ellipse cx="50" cy="99" rx="3" ry="2.5" fill="%231e293b"/>
-  <!-- Feet -->
-  <ellipse cx="98" cy="115" rx="8" ry="6" fill="white"/>
-  <path d="M96 118 L104 118"/>
-  <path d="M96 114 L104 114"/>
-  <!-- Book -->
-  <path d="M52 118 L62 124 L72 118" stroke="%233b82f6" stroke-width="2.5" fill="none"/>
-</svg>`;
+// Official 'Sopivat ajat' Calendar Logo (SVG in public/logo.svg)
+export const SOPIVAT_AJAT_LOGO = '/logo.svg';
+// Alias for backwards compatibility
+export const SNOOPY_ILLUSTRATION = SOPIVAT_AJAT_LOGO;
+
+export function normalizeImageUrl(imageUrl?: string): string {
+  // If missing, or if it points to the deprecated Snoopy drawing, migrate to the official Sopivat ajat logo
+  if (!imageUrl || imageUrl.includes('snoopy') || imageUrl.includes('L40 160') || imageUrl.includes('data:image/svg+xml')) {
+    return SOPIVAT_AJAT_LOGO;
+  }
+  return imageUrl;
+}
 
 // Clean initial state with ZERO days and ZERO submissions
 export const INITIAL_EVENT: ScheduleEvent = {
@@ -30,7 +22,7 @@ export const INITIAL_EVENT: ScheduleEvent = {
   title: 'Arviointikeskustelujen varaukset',
   instructions:
     'Heippa!\n\nOn aika aloittaa lukuvuoden arviointikeskustelut. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t). Tapaamiset järjestetään luokassamme.\n\nAlla on listattuna mahdollisia aikoja. Rastittakaa KAIKKI ne vaihtoehdot, jotka ovat teille sopivia. Vähintään kuitenkin 3 aikaa.\n\nVahvistan teille varatun ajan Wilma-viestillä.\n\nYstävällisin terveisin Esko',
-  imageUrl: SNOOPY_ILLUSTRATION,
+  imageUrl: SOPIVAT_AJAT_LOGO,
   slotDurationMinutes: 20,
   minSelectionsRequired: 3,
   deadlineDate: '',
@@ -66,6 +58,7 @@ export function getEvent(): ScheduleEvent {
     }
     const parsed: ScheduleEvent = JSON.parse(raw);
     parsed.slots = sortSlotsChronologically(parsed.slots || []);
+    parsed.imageUrl = normalizeImageUrl(parsed.imageUrl);
     if (parsed.instructions) {
       parsed.instructions = normalizeInstructions(parsed.instructions);
     }
@@ -78,6 +71,7 @@ export function getEvent(): ScheduleEvent {
 export function saveEvent(event: ScheduleEvent): void {
   // Always guarantee slots are chronologically sorted across the entire app
   event.slots = sortSlotsChronologically(event.slots || []);
+  event.imageUrl = normalizeImageUrl(event.imageUrl);
   if (event.instructions) {
     event.instructions = normalizeInstructions(event.instructions);
   }
@@ -97,13 +91,14 @@ export function saveEvent(event: ScheduleEvent): void {
 export async function saveEventToCloud(event: ScheduleEvent): Promise<boolean> {
   const sortedSlots = sortSlotsChronologically(event.slots || []);
   const normalizedInstructions = normalizeInstructions(event.instructions || '');
+  const normalizedImg = normalizeImageUrl(event.imageUrl);
   try {
     const { error } = await supabase.from('events').upsert({
       id: event.id,
       admin_token: event.adminToken,
       title: event.title,
       instructions: normalizedInstructions,
-      image_url: event.imageUrl,
+      image_url: normalizedImg,
       slot_duration_minutes: event.slotDurationMinutes,
       min_selections_required: event.minSelectionsRequired,
       deadline_date: event.deadlineDate,
@@ -139,7 +134,7 @@ export async function fetchEventFromCloud(id: string): Promise<ScheduleEvent | n
       adminToken: data.admin_token || '',
       title: data.title,
       instructions: normalizeInstructions(data.instructions || ''),
-      imageUrl: data.image_url || '',
+      imageUrl: normalizeImageUrl(data.image_url),
       slotDurationMinutes: data.slot_duration_minutes || 20,
       minSelectionsRequired: data.min_selections_required || 3,
       deadlineDate: data.deadline_date || '',

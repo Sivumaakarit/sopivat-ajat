@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { ScheduleEvent, StudentSubmission, ViewMode } from '../types';
 import { groupSlotsByDate } from '../utils/timeUtils';
-import { normalizeInstructions } from '../services/storage';
+import { normalizeInstructions, normalizeImageUrl } from '../services/storage';
 import confetti from 'canvas-confetti';
 import {
   Check,
@@ -384,11 +384,9 @@ export const ParentView: React.FC<ParentViewProps> = ({
       {/* Paper Header / Snoopy Box */}
       <div className="card">
         <div className="paper-header-box">
-          {event.imageUrl && (
-            <div className="snoopy-avatar" title="Kuvitus">
-              <img src={event.imageUrl} alt="Kuvitus" />
-            </div>
-          )}
+          <div className="brand-avatar" title="Sopivat ajat -logo">
+            <img src={normalizeImageUrl(event.imageUrl)} alt="Sopivat ajat" />
+          </div>
           <div style={{ flex: 1 }}>
             <h1 className="paper-title">{event.title}</h1>
             <div className="paper-instructions">{normalizeInstructions(event.instructions)}</div>

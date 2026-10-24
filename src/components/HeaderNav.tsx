@@ -103,10 +103,10 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
             type="button"
             className={`view-btn ${currentView === 'public' ? 'active' : ''}`}
             onClick={() => handleNavClick('public')}
-            title="Huoltajille jaettava katselulinkki"
+            title="Huoltajille julkaistu vahvistettu aikataulu"
           >
             <Globe size={16} />
-            <span>Julkinen linkki</span>
+            <span>Julkaistu aikataulu</span>
           </button>
         </nav>
 
@@ -212,7 +212,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                 onClick={() => handleNavClick('public')}
               >
                 <Globe size={18} />
-                <span>Julkinen linkki</span>
+                <span>Julkaistu aikataulu</span>
               </button>
             </div>
 

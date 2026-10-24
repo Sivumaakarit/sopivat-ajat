@@ -22,13 +22,26 @@ import { PublicView } from './components/PublicView';
 export function App() {
   const urlParams = new URLSearchParams(window.location.search);
   const sharedEventId = urlParams.get('e');
-  const isTeacherQuery = urlParams.get('mode') === 'teacher' || urlParams.get('admin') === 'true';
-  const isParentMode = Boolean(sharedEventId && !isTeacherQuery);
+  const adminParam = urlParams.get('admin');
+  const modeParam = urlParams.get('mode');
 
   const [event, setEvent] = useState<ScheduleEvent>(getEvent);
   const [submissions, setSubmissions] = useState<StudentSubmission[]>(getSubmissions);
+
+  // Check teacher status: teacher query param, admin flag/token, or local mode (no shared event ID)
+  const isTeacher =
+    modeParam === 'teacher' ||
+    adminParam === 'true' ||
+    Boolean(adminParam && event.adminToken && adminParam === event.adminToken) ||
+    !sharedEventId;
+
+  const isParentMode = Boolean(sharedEventId && !isTeacher);
+
   const [currentView, setCurrentView] = useState<ViewMode>(() => {
-    if (isParentMode) return 'parent';
+    if (isParentMode) {
+      const e = getEvent();
+      return e.isPublished ? 'public' : 'parent';
+    }
     const e = getEvent();
     return e.slots.length > 0 ? 'matching' : 'creator';
   });
@@ -40,6 +53,9 @@ export function App() {
         if (cloudEvent) {
           setEvent(cloudEvent);
           saveEvent(cloudEvent);
+          if (isParentMode) {
+            setCurrentView(cloudEvent.isPublished ? 'public' : 'parent');
+          }
         }
       });
       fetchSubmissionsFromCloud(sharedEventId).then(cloudSubs => {
@@ -48,9 +64,9 @@ export function App() {
         }
       });
     }
-  }, [sharedEventId]);
+  }, [sharedEventId, isParentMode]);
 
-  // Real-time Supabase subscription: update submissions immediately when a parent responds
+  // Real-time Supabase subscription: update submissions and event status immediately
   useEffect(() => {
     if (!event.id) return;
 
@@ -62,7 +78,7 @@ export function App() {
     });
 
     const channel = supabase
-      .channel(`submissions:${event.id}`)
+      .channel(`live-channel:${event.id}`)
       .on(
         'postgres_changes',
         {
@@ -78,12 +94,30 @@ export function App() {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'events',
+          filter: `id=eq.${event.id}`,
+        },
+        async () => {
+          const freshEvent = await fetchEventFromCloud(event.id);
+          if (freshEvent) {
+            setEvent(freshEvent);
+            if (isParentMode) {
+              setCurrentView(freshEvent.isPublished ? 'public' : 'parent');
+            }
+          }
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [event.id]);
+  }, [event.id, isParentMode]);
 
   const handleUpdateEvent = (updated: ScheduleEvent) => {
     setEvent(updated);
@@ -131,28 +165,56 @@ export function App() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <span style={{ fontSize: '1.25rem' }}>🗓️</span>
+            <img src="/logo.svg" alt="Sopivat ajat" style={{ width: '28px', height: '28px', borderRadius: '6px' }} />
             <div>
               <h1 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: 0, lineHeight: 1.2 }}>
                 Sopivat ajat
               </h1>
               <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0 }}>
-                Arviointikeskustelujen toivekysely
+                {event.isPublished ? 'Vahvistettu aikataulu' : 'Arviointikeskustelujen toivekysely'}
               </p>
             </div>
           </div>
-          <span
-            style={{
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              color: '#16a34a',
-              background: '#dcfce7',
-              padding: '0.25rem 0.65rem',
-              borderRadius: '20px',
-            }}
-          >
-            ● Ajanvaraus avoinna
-          </span>
+          {event.isPublished ? (
+            <span
+              style={{
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                color: '#16a34a',
+                background: '#dcfce7',
+                padding: '0.25rem 0.65rem',
+                borderRadius: '20px',
+              }}
+            >
+              ● Aikataulu vahvistettu
+            </span>
+          ) : event.isLocked ? (
+            <span
+              style={{
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                color: '#d97706',
+                background: '#fef3c7',
+                padding: '0.25rem 0.65rem',
+                borderRadius: '20px',
+              }}
+            >
+              ⏳ Palapeli käynnissä
+            </span>
+          ) : (
+            <span
+              style={{
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                color: '#16a34a',
+                background: '#dcfce7',
+                padding: '0.25rem 0.65rem',
+                borderRadius: '20px',
+              }}
+            >
+              ● Ajanvaraus avoinna
+            </span>
+          )}
         </header>
       )}
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { ScheduleEvent, StudentSubmission, ViewMode } from '../types';
 import { getStudentDisplayName, sortSlotsChronologically } from '../utils/timeUtils';
-import { assignStudentToSlot, saveEvent, addSubmission } from '../services/storage';
+import { assignStudentToSlot, saveEvent, addSubmission, createNewOfficialEvent } from '../services/storage';
 import confetti from 'canvas-confetti';
 import {
   CheckCircle,
@@ -17,6 +17,12 @@ import {
   X,
   ArrowLeftRight,
   ArrowRight,
+  Lock,
+  Unlock,
+  Send,
+  Key,
+  Share2,
+  Globe,
 } from 'lucide-react';
 
 interface MatchingViewProps {
@@ -44,6 +50,13 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
   const [manualFirst, setManualFirst] = useState('');
   const [manualInitial, setManualInitial] = useState('');
   const [manualSlots, setManualSlots] = useState<string[]>([]);
+
+  // New official survey modal
+  const [showNewSurveyModal, setShowNewSurveyModal] = useState(false);
+  const [newSurveyKeepSlots, setNewSurveyKeepSlots] = useState(true);
+  const [createdSurveyLinks, setCreatedSurveyLinks] = useState<{ adminUrl: string; parentUrl: string } | null>(null);
+  const [copiedAdminLink, setCopiedAdminLink] = useState(false);
+  const [copiedParentLink, setCopiedParentLink] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -166,24 +179,62 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
     }
   };
 
+  const handleToggleLock = () => {
+    const updated = { ...event, isLocked: !event.isLocked };
+    saveEvent(updated);
+    onEventUpdated(updated);
+    showToast(updated.isLocked ? 'Vastausaika suljettu. Vanhemmat näkevät odotusilmoituksen.' : 'Vastausaika avattu uudelleen vanhemmille.');
+  };
+
+  const handleTogglePublish = () => {
+    if (!event.isPublished) {
+      if (unassignedSubmissions.length > 0) {
+        const confirmed = window.confirm(
+          `Huomio: Luokassa on vielä ${unassignedSubmissions.length} oppilasta ilman vahvistettua aikaa.\n\nHaluatko silti julkaista aikataulun vanhemmille nyt?`
+        );
+        if (!confirmed) return;
+      }
+      const updated = { ...event, isPublished: true, isLocked: true };
+      saveEvent(updated);
+      onEventUpdated(updated);
+      confetti({ particleCount: 70, spread: 70, origin: { y: 0.6 } });
+      showToast('🚀 Aikataulu julkaistu! Vanhemmat näkevät vahvistetut ajat samasta linkistä.');
+    } else {
+      const confirmed = window.confirm(
+        'Haluatko palauttaa aikataulun luonnokseksi? Vanhemmat näkevät tällöin taas odotusilmoituksen (palapeli käynnissä).'
+      );
+      if (!confirmed) return;
+      const updated = { ...event, isPublished: false };
+      saveEvent(updated);
+      onEventUpdated(updated);
+      showToast('Aikataulu palautettu luonnokseksi.');
+    }
+  };
+
+  const handleStartNewSurvey = () => {
+    const newEvt = createNewOfficialEvent(newSurveyKeepSlots);
+    onEventUpdated(newEvt);
+    const base = `${window.location.origin}${window.location.pathname}`;
+    setCreatedSurveyLinks({
+      adminUrl: `${base}?e=${encodeURIComponent(newEvt.id)}&admin=${encodeURIComponent(newEvt.adminToken)}`,
+      parentUrl: `${base}?e=${encodeURIComponent(newEvt.id)}`,
+    });
+    showToast('Uusi virallinen kysely luotu!');
+  };
+
   // Copy Wilma template
   const copyWilmaMessage = () => {
-    let text = `Hei!\n\nArviointikeskustelujen ajat on nyt vahvistettu:\n\n`;
-
-    const assignedSlots = event.slots.filter(s => s.assignedStudentId);
-    assignedSlots.forEach(slot => {
-      const student = submissions.find(sub => sub.id === slot.assignedStudentId);
-      if (student) {
-        const studentName = getStudentDisplayName(student, submissions);
-        text += `• ${slot.dateLabel || slot.date} klo ${slot.startTime}–${slot.endTime}: ${studentName}\n`;
-      }
-    });
-
-    text += `\nTapaamiset pidetään omassa luokassamme. Lämpimästi tervetuloa!\n\nYstävällisin terveisin,\n${event.teacherName}`;
+    const shareUrl = `${window.location.origin}${window.location.pathname}?e=${encodeURIComponent(event.id)}`;
+    let text = '';
+    if (event.isPublished) {
+      text = `Hei huoltajat!\n\nLuokan arviointikeskustelujen aikataulu on nyt valmis ja vahvistettu!\n\nNäette oman perheenne vahvistetun ajan samasta osoitteesta kuin kyselynkin:\n${shareUrl}\n\nJos teille tulee esteitä tai toivotte vaihtoa toisen perheen kanssa päittäin, voitte sopia vaihdon keskenänne ja ilmoittaa siitä minulle Wilmassa.\n\nTervetuloa tapaamiseen omassa luokassamme sovittuna aikana!\n\nYstävällisin terveisin,\n${event.teacherName || 'Esko'}`;
+    } else {
+      text = `Hei huoltajat!\n\nOn aika valita sopivat ajat lukuvuoden arviointikeskusteluille. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t).\n\nKäykää valitsemassa teille sopivat ajat alla olevasta linkistä:\n${shareUrl}\n\nValitkaa yhteensä vähintään ${event.minSelectionsRequired || 3} teille sopivaa vaihtoehtoa.\n\nYstävällisin terveisin,\n${event.teacherName || 'Esko'}`;
+    }
 
     navigator.clipboard.writeText(text);
     setCopiedWilma(true);
-    showToast('Wilma-tiedote kopioitu leikepöydälle!');
+    showToast(event.isPublished ? 'Wilma-julkaisuviesti kopioitu!' : 'Wilma-kyselyviesti kopioitu!');
     setTimeout(() => setCopiedWilma(false), 3000);
   };
 
@@ -261,7 +312,134 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
 
           <button className="btn-primary" onClick={copyWilmaMessage}>
             {copiedWilma ? <Check size={16} /> : <Copy size={16} />}
-            <span>{copiedWilma ? 'Kopioitu!' : 'Kopioi Wilma-tiedote'}</span>
+            <span>{copiedWilma ? 'Kopioitu!' : event.isPublished ? 'Kopioi Wilma-tiedote' : 'Kopioi Wilma-kysely'}</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => {
+              setCreatedSurveyLinks(null);
+              setShowNewSurveyModal(true);
+            }}
+            title="Luo uusi virallinen kysely puhtaalla pohjalla"
+          >
+            <Share2 size={16} />
+            <span>+ Uusi virallinen kysely</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Lifecycle Status & Action Banner */}
+      <div
+        className="card"
+        style={{
+          background: event.isPublished
+            ? 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)'
+            : event.isLocked
+            ? 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)'
+            : 'linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)',
+          border: event.isPublished
+            ? '2px solid #86efac'
+            : event.isLocked
+            ? '2px solid #fde68a'
+            : '2px solid #bfdbfe',
+          padding: '1.25rem 1.5rem',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <div
+            style={{
+              background: event.isPublished ? '#dcfce7' : event.isLocked ? '#fef3c7' : '#dbeafe',
+              color: event.isPublished ? '#15803d' : event.isLocked ? '#b45309' : '#1d4ed8',
+              padding: '0.65rem',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {event.isPublished ? <CheckCircle size={22} /> : event.isLocked ? <Lock size={22} /> : <Unlock size={22} />}
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <span
+                style={{
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  color: event.isPublished ? '#15803d' : event.isLocked ? '#b45309' : '#1d4ed8',
+                  background: '#ffffff',
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  border: `1px solid ${event.isPublished ? '#86efac' : event.isLocked ? '#fde68a' : '#bfdbfe'}`,
+                }}
+              >
+                {event.isPublished ? '3. Julkaistu vanhemmille' : event.isLocked ? '2. Palapeli käynnissä' : '1. Vastausaika avoinna'}
+              </span>
+            </div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: '0.2rem 0 0.15rem 0' }}>
+              {event.isPublished
+                ? 'Aikataulu on julkaistu vanhemmille'
+                : event.isLocked
+                ? 'Vastausaika on suljettu – sovitat aikoja palapelissä'
+                : 'Vastausaika on avoinna huoltajille'}
+            </h3>
+            <p style={{ color: '#475569', fontSize: '0.88rem', margin: 0 }}>
+              {event.isPublished
+                ? 'Vanhemmat näkevät nyt vahvistetut ajat samasta Wilma-linkistä.'
+                : event.isLocked
+                ? 'Vanhemmat näkevät ystävällisen odotusviestin samassa linkissä.'
+                : 'Vanhemmat voivat syöttää toiveitaan vastauslomakkeella.'}
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {/* Toggle Lock */}
+          {!event.isPublished && (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleToggleLock}
+              style={{ fontSize: '0.88rem', padding: '0.55rem 0.9rem' }}
+            >
+              {event.isLocked ? <Unlock size={16} /> : <Lock size={16} />}
+              <span>{event.isLocked ? 'Avaa vastaukset' : 'Sulje vastaukset'}</span>
+            </button>
+          )}
+
+          {/* Toggle Publish */}
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={handleTogglePublish}
+            style={{
+              background: event.isPublished ? '#475569' : '#16a34a',
+              border: 'none',
+              fontWeight: 800,
+              fontSize: '0.92rem',
+              padding: '0.6rem 1.1rem',
+            }}
+          >
+            {event.isPublished ? (
+              <>
+                <RotateCcw size={16} />
+                <span>Palauta luonnokseksi</span>
+              </>
+            ) : (
+              <>
+                <Send size={16} />
+                <span>🚀 Julkaise aikataulu vanhemmille</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -787,6 +965,205 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                 Tallenna oppilas
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* New official survey modal */}
+      {showNewSurveyModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          padding: '1rem',
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: '580px', maxHeight: '90vh', overflowY: 'auto', padding: '1.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <div style={{ background: '#eff6ff', color: '#2563eb', padding: '0.5rem', borderRadius: '10px' }}>
+                  <Share2 size={22} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                    Aloita uusi virallinen kysely
+                  </h3>
+                  <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0 }}>
+                    Luo uusi puhdas kysely omalla salaisella osoitteella
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="select-all-btn"
+                onClick={() => setShowNewSurveyModal(false)}
+                aria-label="Sulje"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {!createdSurveyLinks ? (
+              <div>
+                <p style={{ color: '#475569', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>
+                  Haluatko luoda uuden, puhtaan kyselyn oikeita arviointikeskusteluja varten?
+                  Järjestelmä luo uuden uniikin kyselytunnuksen, jotta harjoitusvastaukset eivät sekoitu oikeaan kyselyyn.
+                </p>
+
+                <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '0.65rem' }}>
+                    Valitse pohja uudelle kyselylle:
+                  </span>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', marginBottom: '0.75rem', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="surveySlotsOption"
+                      checked={newSurveyKeepSlots}
+                      onChange={() => setNewSurveyKeepSlots(true)}
+                      style={{ marginTop: '3px' }}
+                    />
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: '#0f172a' }}>
+                        Pidä nykyiset ajankohdat pohjana ({event.slots.length} kpl)
+                      </strong>
+                      <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0.15rem 0 0 0', lineHeight: 1.4 }}>
+                        Suositus: Säilyttää syöttämäsi päivät ja kellonajat, mutta tyhjentää kaikki harjoitusoppilaat ja varaukset puhtaaksi.
+                      </p>
+                    </div>
+                  </label>
+
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="surveySlotsOption"
+                      checked={!newSurveyKeepSlots}
+                      onChange={() => setNewSurveyKeepSlots(false)}
+                      style={{ marginTop: '3px' }}
+                    />
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: '#0f172a' }}>
+                        Aloita täysin tyhjältä pöydältä
+                      </strong>
+                      <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0.15rem 0 0 0', lineHeight: 1.4 }}>
+                        Poistaa kaikki ajat ja vastaukset, ja aloittaa puhtaalta sivulta.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn-secondary" onClick={() => setShowNewSurveyModal(false)}>
+                    Peruuta
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    style={{ background: '#2563eb' }}
+                    onClick={handleStartNewSurvey}
+                  >
+                    Luo virallinen kysely 🚀
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '12px', padding: '1rem', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#16a34a', fontWeight: 800, marginBottom: '0.25rem' }}>
+                    <Sparkles size={18} />
+                    <span>Uusi kysely on luotu onnistuneesti!</span>
+                  </div>
+                  <p style={{ fontSize: '0.88rem', color: '#166534', margin: 0 }}>
+                    Tässä ovat uudet linkkisi. Ota talteen opettajan hallintalinkki ja lähetä huoltajien linkki Wilmassa.
+                  </p>
+                </div>
+
+                {/* Secret Teacher Admin Link */}
+                <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '1rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.35rem' }}>
+                    <Key size={16} color="#2563eb" />
+                    <span>1. Opettajan salainen hallintalinkki (vain sinulle)</span>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.65rem' }}>
+                    Tällä linkillä pääset aina suoraan hallitsemaan ja sovittamaan tämän kyselyn aikoja miltä tahansa laitteelta:
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                      type="text"
+                      readOnly
+                      value={createdSurveyLinks.adminUrl}
+                      className="form-input"
+                      style={{ fontSize: '0.85rem', background: '#ffffff' }}
+                    />
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => {
+                        navigator.clipboard.writeText(createdSurveyLinks.adminUrl);
+                        setCopiedAdminLink(true);
+                        setTimeout(() => setCopiedAdminLink(false), 2500);
+                      }}
+                      style={{ flexShrink: 0 }}
+                    >
+                      {copiedAdminLink ? <Check size={16} /> : <Copy size={16} />}
+                      <span>{copiedAdminLink ? 'Kopioitu!' : 'Kopioi'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Parent Link */}
+                <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a', fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.35rem' }}>
+                    <Globe size={16} color="#16a34a" />
+                    <span>2. Huoltajien linkki (lähetä Wilmassa)</span>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.65rem' }}>
+                    Tämän saman linkin lähetät vanhemmille. He vastaavat tähän ja näkevät myöhemmin vahvistetun aikataulun:
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                      type="text"
+                      readOnly
+                      value={createdSurveyLinks.parentUrl}
+                      className="form-input"
+                      style={{ fontSize: '0.85rem', background: '#ffffff' }}
+                    />
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => {
+                        navigator.clipboard.writeText(createdSurveyLinks.parentUrl);
+                        setCopiedParentLink(true);
+                        setTimeout(() => setCopiedParentLink(false), 2500);
+                      }}
+                      style={{ flexShrink: 0 }}
+                    >
+                      {copiedParentLink ? <Check size={16} /> : <Copy size={16} />}
+                      <span>{copiedParentLink ? 'Kopioitu!' : 'Kopioi'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => {
+                      setShowNewSurveyModal(false);
+                      window.history.pushState({}, '', createdSurveyLinks.adminUrl);
+                    }}
+                  >
+                    Valmis! Siirry kyselyyn
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

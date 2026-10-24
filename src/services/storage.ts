@@ -28,6 +28,7 @@ export const INITIAL_EVENT: ScheduleEvent = {
   deadlineDate: '',
   teacherName: 'Esko',
   isLocked: false,
+  isPublished: false,
   slots: [],
 };
 
@@ -59,6 +60,7 @@ export function getEvent(): ScheduleEvent {
     const parsed: ScheduleEvent = JSON.parse(raw);
     parsed.slots = sortSlotsChronologically(parsed.slots || []);
     parsed.imageUrl = normalizeImageUrl(parsed.imageUrl);
+    parsed.isPublished = Boolean(parsed.isPublished);
     if (parsed.instructions) {
       parsed.instructions = normalizeInstructions(parsed.instructions);
     }
@@ -92,6 +94,8 @@ export async function saveEventToCloud(event: ScheduleEvent): Promise<boolean> {
   const sortedSlots = sortSlotsChronologically(event.slots || []);
   const normalizedInstructions = normalizeInstructions(event.instructions || '');
   const normalizedImg = normalizeImageUrl(event.imageUrl);
+  const deadlineValue = (event.isPublished ? 'PUBLISHED::' : '') + (event.deadlineDate || '');
+
   try {
     const { error } = await supabase.from('events').upsert({
       id: event.id,
@@ -101,7 +105,7 @@ export async function saveEventToCloud(event: ScheduleEvent): Promise<boolean> {
       image_url: normalizedImg,
       slot_duration_minutes: event.slotDurationMinutes,
       min_selections_required: event.minSelectionsRequired,
-      deadline_date: event.deadlineDate,
+      deadline_date: deadlineValue,
       teacher_name: event.teacherName,
       slots: sortedSlots,
       is_locked: event.isLocked,
@@ -129,6 +133,10 @@ export async function fetchEventFromCloud(id: string): Promise<ScheduleEvent | n
 
     if (error || !data) return null;
 
+    const rawDeadline = data.deadline_date || '';
+    const isPublished = rawDeadline.startsWith('PUBLISHED::');
+    const deadlineDate = rawDeadline.replace('PUBLISHED::', '');
+
     return {
       id: data.id,
       adminToken: data.admin_token || '',
@@ -137,10 +145,11 @@ export async function fetchEventFromCloud(id: string): Promise<ScheduleEvent | n
       imageUrl: normalizeImageUrl(data.image_url),
       slotDurationMinutes: data.slot_duration_minutes || 20,
       minSelectionsRequired: data.min_selections_required || 3,
-      deadlineDate: data.deadline_date || '',
+      deadlineDate: deadlineDate,
       teacherName: data.teacher_name || '',
       slots: sortSlotsChronologically(data.slots || []),
       isLocked: data.is_locked || false,
+      isPublished: isPublished,
     };
   } catch {
     return null;
@@ -276,3 +285,27 @@ export function resetAllData(): void {
   localStorage.removeItem('sopivat_ajat_event');
   localStorage.removeItem('sopivat_ajat_submissions');
 }
+
+export function createNewOfficialEvent(keepSlots: boolean = true): ScheduleEvent {
+  const current = getEvent();
+  const cleanSlots = keepSlots
+    ? current.slots.map(s => ({ ...s, assignedStudentId: null }))
+    : [];
+  const randomSuffix = Math.random().toString(36).substring(2, 7);
+  const newId = 'kysely-' + Date.now().toString(36) + '-' + randomSuffix;
+  const newAdminToken = 'ope-' + Math.random().toString(36).substring(2, 8) + '-' + Math.random().toString(36).substring(2, 8);
+
+  const newEvent: ScheduleEvent = {
+    ...current,
+    id: newId,
+    adminToken: newAdminToken,
+    isLocked: false,
+    isPublished: false,
+    slots: cleanSlots,
+  };
+
+  saveEvent(newEvent);
+  saveSubmissions([]);
+  return newEvent;
+}
+

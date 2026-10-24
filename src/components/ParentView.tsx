@@ -118,6 +118,98 @@ export const ParentView: React.FC<ParentViewProps> = ({
     setIsSubmitted(true);
   };
 
+  if (event.isLocked && !event.isPublished) {
+    return (
+      <div className="main-layout">
+        {isPreview && onNavigate && (
+          <div
+            className="card"
+            style={{
+              background: '#fef3c7',
+              border: '1.5px solid #fde68a',
+              padding: '0.85rem 1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '1rem',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#92400e', fontWeight: 600, fontSize: '0.88rem' }}>
+              <AlertCircle size={18} />
+              <span>Opettajan esikatselu: Kysely on suljettu, aikoja sovitetaan palapelissä.</span>
+            </div>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => onNavigate('matching')}
+              style={{ fontSize: '0.85rem', padding: '0.4rem 0.85rem' }}
+            >
+              Avaa aikasovitus
+            </button>
+          </div>
+        )}
+
+        <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem', maxWidth: '640px', margin: '2rem auto' }}>
+          <div className="brand-avatar" style={{ margin: '0 auto 1.25rem auto', width: '70px', height: '70px' }}>
+            <img src={normalizeImageUrl(event.imageUrl)} alt="Sopivat ajat" />
+          </div>
+
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: '#fef3c7',
+              color: '#d97706',
+              padding: '4px 12px',
+              borderRadius: '20px',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              marginBottom: '1rem',
+              border: '1px solid #fde68a',
+            }}
+          >
+            <span>⏳ Palapeli käynnissä</span>
+          </div>
+
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', marginBottom: '0.75rem' }}>
+            Vastausaika on päättynyt
+          </h2>
+
+          <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6, maxWidth: '500px', margin: '0 auto 1.5rem auto' }}>
+            Opettaja {event.teacherName || 'Esko'} sovittaa parhaillaan luokan toiveita yhteen palapelissä. Vahvistettu aikataulu julkaistaan pian tähän samaan osoitteeseen.
+          </p>
+
+          <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '2rem' }}>
+            Voit palata tälle sivulle myöhemmin samasta Wilma-linkistä tarkistamaan oman aikanne!
+          </p>
+
+          <div
+            style={{
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '12px',
+              padding: '1rem 1.25rem',
+              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '0.75rem',
+              color: '#475569',
+              fontSize: '0.88rem',
+              lineHeight: 1.5,
+            }}
+          >
+            <HelpCircle size={18} color="#64748b" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              <strong>Etkö ehtinyt vastata kyselyyn?</strong> Ei huolta – laita lyhyt viesti opettajalle Wilmassa, niin katsotaan yhdessä vapaana olevat ajat.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isSubmitted) {
     return (
       <div className="card" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>

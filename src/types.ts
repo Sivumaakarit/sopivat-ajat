@@ -20,6 +20,7 @@ export interface ScheduleEvent {
   teacherName: string;
   slots: TimeSlot[];
   isLocked: boolean;
+  isPublished?: boolean;
 }
 
 export interface StudentSubmission {

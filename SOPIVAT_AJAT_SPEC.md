@@ -1,6 +1,8 @@
 # 📌 SOPIVAT AJAT – Master-spesifikaatio & Arkkitehtuuridokumentti
-*Versio: 1.2.0 | Päivitetty: 23.10.2026*  
-*Tila: Toteutettu ja testattu lokaalisti*
+*Versio: 1.2.0 | Päivitetty: 24.10.2026*  
+*Tila: Julkaistu tuotantoon (Live)*  
+*🌐 Live URL:* [https://sopivat-ajat.vercel.app](https://sopivat-ajat.vercel.app)  
+*📦 GitHub:* [https://github.com/Sivumaakarit/sopivat-ajat](https://github.com/Sivumaakarit/sopivat-ajat)  
 
 ---
 

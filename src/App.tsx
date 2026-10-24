@@ -17,9 +17,12 @@ import { PrintView } from './components/PrintView';
 import { PublicView } from './components/PublicView';
 
 export function App() {
-  const [currentView, setCurrentView] = useState<ViewMode>('matching');
   const [event, setEvent] = useState<ScheduleEvent>(getEvent);
   const [submissions, setSubmissions] = useState<StudentSubmission[]>(getSubmissions);
+  const [currentView, setCurrentView] = useState<ViewMode>(() => {
+    const e = getEvent();
+    return e.slots.length > 0 ? 'matching' : 'creator';
+  });
 
   // Sync state on load
   useEffect(() => {
@@ -38,10 +41,11 @@ export function App() {
   };
 
   const handleResetData = () => {
-    if (window.confirm('Haluatko varmasti palauttaa mallipaperin oletustiedot ja esimerkkivastaukset?')) {
+    if (window.confirm('Haluatko varmasti tyhjentää kaikki tiedot ja aloittaa puhtaalta nollapöydältä?')) {
       resetAllData();
       setEvent(INITIAL_EVENT);
       setSubmissions(INITIAL_SUBMISSIONS);
+      setCurrentView('creator');
     }
   };
 

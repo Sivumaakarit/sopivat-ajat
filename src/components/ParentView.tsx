@@ -198,8 +198,13 @@ export const ParentView: React.FC<ParentViewProps> = ({ event, onSubmit, isPrevi
             </span>
           </div>
 
-          <div className="day-columns-grid">
-            {groupedDays.map(group => {
+          {groupedDays.length === 0 ? (
+            <div style={{ padding: '2.5rem 1rem', textAlign: 'center', background: '#f8fafc', border: '1.5px dashed #cbd5e1', borderRadius: '12px', color: '#64748b' }}>
+              <p style={{ fontWeight: 600, fontSize: '1rem' }}>Opettaja ei ole vielä lisännyt aikoja tähän tapahtumaan.</p>
+            </div>
+          ) : (
+            <div className="day-columns-grid">
+              {groupedDays.map(group => {
               const daySlotIds = group.slots.map(s => s.id);
               const allSelected = daySlotIds.length > 0 && daySlotIds.every(id => selectedSlotIds.includes(id));
 
@@ -247,6 +252,7 @@ export const ParentView: React.FC<ParentViewProps> = ({ event, onSubmit, isPrevi
               );
             })}
           </div>
+          )}
         </div>
       </div>
 

@@ -24,10 +24,32 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
   onUpdateEvent,
   onOpenPreview,
 }) => {
-  // Current active day for slot creation
-  const [selectedDateLabel, setSelectedDateLabel] = useState('Torstai 12.11.');
-  const [selectedDate, setSelectedDate] = useState('2026-11-12');
-  const [selectedSection, setSelectedSection] = useState('Marraskuu');
+  // Current active day for slot creation (empty if starting from scratch with 0 slots)
+  const [selectedDateLabel, setSelectedDateLabel] = useState(() => {
+    if (event.slots.length > 0) return event.slots[0].dateLabel || event.slots[0].date;
+    return '';
+  });
+  const [selectedDate, setSelectedDate] = useState(() => {
+    if (event.slots.length > 0) return event.slots[0].date;
+    return '';
+  });
+  const [selectedSection, setSelectedSection] = useState(() => {
+    if (event.slots.length > 0) return event.slots[0].section || '';
+    return '';
+  });
+
+  // Sync state if slots are cleared (reset to 0)
+  React.useEffect(() => {
+    if (event.slots.length === 0 && !customDateValue && !customDayLabel) {
+      setSelectedDateLabel('');
+      setSelectedDate('');
+      setSelectedSection('');
+    } else if (event.slots.length > 0 && !selectedDateLabel) {
+      setSelectedDateLabel(event.slots[0].dateLabel || event.slots[0].date);
+      setSelectedDate(event.slots[0].date);
+      setSelectedSection(event.slots[0].section || '');
+    }
+  }, [event.slots.length]);
 
   // Input for the next slot (user can freely type 17:00 or any time)
   const [startTimeInput, setStartTimeInput] = useState('13:15');
@@ -78,6 +100,12 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
   // Delete an entire day (with confirmation dialog)
   const handleDeleteDay = (dayLabel: string) => {
     const slotsInDay = event.slots.filter(s => s.dateLabel === dayLabel || s.date === dayLabel);
+    if (slotsInDay.length === 0) {
+      setSelectedDateLabel('');
+      setSelectedDate('');
+      setSelectedSection('');
+      return;
+    }
     if (
       window.confirm(
         `Haluatko varmasti poistaa koko päivän "${dayLabel}" ja sen kaikki ${slotsInDay.length} aikaa?`
@@ -88,7 +116,7 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
       );
       onUpdateEvent({ ...event, slots: remainingSlots });
 
-      // If the currently selected day was deleted, switch to the first remaining day
+      // If the currently selected day was deleted, switch to the first remaining day or clear
       const remainingDays = Array.from(new Set(remainingSlots.map(s => s.dateLabel || s.date)));
       if (remainingDays.length > 0) {
         setSelectedDateLabel(remainingDays[0]);
@@ -97,6 +125,10 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
           setSelectedDate(matched.date);
           setSelectedSection(matched.section || '');
         }
+      } else {
+        setSelectedDateLabel('');
+        setSelectedDate('');
+        setSelectedSection('');
       }
     }
   };
@@ -331,77 +363,163 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
           </div>
         )}
 
-        {/* Day selection tabs */}
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label className="form-label">Valitse muokattava päivä:</label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-            {distinctDayLabels.map(dayLabel => {
-              const isSelected = selectedDateLabel === dayLabel;
-              const count = event.slots.filter(s => s.dateLabel === dayLabel).length;
-              return (
-                <div
-                  key={dayLabel}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    background: isSelected ? '#eff6ff' : '#ffffff',
-                    border: `1.5px solid ${isSelected ? '#3b82f6' : '#e2e8f0'}`,
-                    borderRadius: '8px',
-                    padding: '2px 4px 2px 8px',
-                  }}
-                >
-                  <button
-                    type="button"
-                    style={{
-                      border: 'none',
-                      background: 'transparent',
-                      color: isSelected ? '#1d4ed8' : '#334155',
-                      fontWeight: isSelected ? 700 : 500,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      padding: '4px 6px',
-                    }}
-                    onClick={() => {
-                      setSelectedDateLabel(dayLabel);
-                      const matched = event.slots.filter(s => s.dateLabel === dayLabel);
-                      const lastForDay = matched[matched.length - 1];
-                      if (lastForDay) {
-                        setSelectedDate(lastForDay.date);
-                        setSelectedSection(lastForDay.section || '');
-                        setStartTimeInput(lastForDay.endTime);
-                      } else {
-                        setStartTimeInput(dayLabel.includes('Maanantai') ? '14:00' : '13:15');
-                      }
-                    }}
-                  >
-                    <span>{dayLabel}</span>
-                    <span style={{
-                      fontSize: '0.75rem',
-                      background: isSelected ? '#2563eb' : '#f1f5f9',
-                      color: isSelected ? '#fff' : '#64748b',
-                      padding: '1px 6px',
-                      borderRadius: '8px',
-                    }}>
-                      {count}
-                    </span>
-                  </button>
+        {/* Zero-state onboarding card when no days are defined yet */}
+        {!selectedDateLabel && distinctDayLabels.length === 0 ? (
+          <div style={{
+            background: '#f8fafc',
+            border: '2px dashed #93c5fd',
+            borderRadius: '16px',
+            padding: '2rem 1.25rem',
+            textAlign: 'center',
+            marginBottom: '1rem',
+          }}>
+            <div style={{
+              display: 'inline-flex',
+              background: '#eff6ff',
+              color: '#2563eb',
+              padding: '0.9rem',
+              borderRadius: '50%',
+              marginBottom: '0.75rem'
+            }}>
+              <Calendar size={32} />
+            </div>
+            <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1e3a8a', marginBottom: '0.35rem' }}>
+              Aloita valitsemalla ensimmäinen keskustelupäivä
+            </h4>
+            <p style={{ color: '#475569', fontSize: '0.92rem', maxWidth: '440px', margin: '0 auto 1.25rem auto', lineHeight: 1.5 }}>
+              Lomake aloittaa puhtaalta nollapöydältä. Valitse kalenterista ensimmäinen päivämäärä, jolle haluat tarjota aikoja.
+            </p>
 
-                  {/* Day trash button directly in active day tab */}
-                  <button
-                    type="button"
-                    className="day-action-btn"
-                    onClick={() => handleDeleteDay(dayLabel)}
-                    title={`Poista koko päivä "${dayLabel}"`}
-                  >
-                    <Trash2 size={13} />
-                  </button>
+            {/* Inline First Day Picker */}
+            <div style={{
+              maxWidth: '520px',
+              margin: '0 auto',
+              background: '#ffffff',
+              border: '1.5px solid #bfdbfe',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              textAlign: 'left',
+              boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.08)',
+            }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>1. Valitse päivämäärä</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={customDateValue}
+                    onChange={handleCalendarPickerChange}
+                  />
                 </div>
-              );
-            })}
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>2. Suomenkielinen otsikko</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="esim. Maanantai 16.11."
+                    value={customDayLabel}
+                    onChange={e => setCustomDayLabel(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                  <label className="form-label" style={{ fontSize: '0.8rem' }}>Jakso (valinnainen)</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="esim. Syksy"
+                    value={customSection}
+                    onChange={e => setCustomSection(e.target.value)}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{ alignSelf: 'flex-end', padding: '0.55rem 1.25rem', fontWeight: 700 }}
+                  disabled={!customDayLabel.trim()}
+                  onClick={handleAddCustomDay}
+                >
+                  ✨ Luo ensimmäinen päivä
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <>
+            {/* Day selection tabs */}
+            {distinctDayLabels.length > 0 && (
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label className="form-label">Valitse muokattava päivä:</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {distinctDayLabels.map(dayLabel => {
+                    const isSelected = selectedDateLabel === dayLabel;
+                    const count = event.slots.filter(s => s.dateLabel === dayLabel).length;
+                    return (
+                      <div
+                        key={dayLabel}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          background: isSelected ? '#eff6ff' : '#ffffff',
+                          border: `1.5px solid ${isSelected ? '#3b82f6' : '#e2e8f0'}`,
+                          borderRadius: '8px',
+                          padding: '2px 4px 2px 8px',
+                        }}
+                      >
+                        <button
+                          type="button"
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            color: isSelected ? '#1d4ed8' : '#334155',
+                            fontWeight: isSelected ? 700 : 500,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            padding: '4px 6px',
+                          }}
+                          onClick={() => {
+                            setSelectedDateLabel(dayLabel);
+                            const matched = event.slots.filter(s => s.dateLabel === dayLabel);
+                            const lastForDay = matched[matched.length - 1];
+                            if (lastForDay) {
+                              setSelectedDate(lastForDay.date);
+                              setSelectedSection(lastForDay.section || '');
+                              setStartTimeInput(lastForDay.endTime);
+                            } else {
+                              setStartTimeInput(dayLabel.includes('Maanantai') ? '14:00' : '13:15');
+                            }
+                          }}
+                        >
+                          <span>{dayLabel}</span>
+                          <span style={{
+                            fontSize: '0.75rem',
+                            background: isSelected ? '#2563eb' : '#f1f5f9',
+                            color: isSelected ? '#fff' : '#64748b',
+                            padding: '1px 6px',
+                            borderRadius: '8px',
+                          }}>
+                            {count}
+                          </span>
+                        </button>
+
+                        {/* Day trash button directly in active day tab */}
+                        <button
+                          type="button"
+                          className="day-action-btn"
+                          onClick={() => handleDeleteDay(dayLabel)}
+                          title={`Poista koko päivä "${dayLabel}"`}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
         {/* Smart Adder Box */}
         <div style={{
@@ -594,6 +712,8 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
             </div>
           )}
         </div>
+        </>
+        )}
       </div>
 
       {/* Overview of All Days & Bottom Trash Removal */}
@@ -609,8 +729,15 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
           </div>
         </div>
 
-        <div className="day-columns-grid">
-          {groupedDays.map(g => (
+        {groupedDays.length === 0 ? (
+          <div style={{ padding: '2rem 1rem', textAlign: 'center', background: '#f8fafc', border: '1.5px dashed #cbd5e1', borderRadius: '12px', color: '#64748b' }}>
+            <Clock size={32} style={{ margin: '0 auto 0.5rem auto', color: '#94a3b8' }} />
+            <h4 style={{ fontWeight: 700, color: '#334155', marginBottom: '0.25rem' }}>Ei vielä luotuja aikoja</h4>
+            <p style={{ fontSize: '0.88rem' }}>Syötä ensimmäiset ajat yllä olevalla lisäystyökalulla aloittaaksesi.</p>
+          </div>
+        ) : (
+          <div className="day-columns-grid">
+            {groupedDays.map(g => (
             <div key={`${g.date}_${g.section || ''}`} className="day-column-card">
               <div className="day-header">
                 <div>
@@ -669,7 +796,8 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

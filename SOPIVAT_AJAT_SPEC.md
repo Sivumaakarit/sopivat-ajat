@@ -1,6 +1,6 @@
 # 📌 SOPIVAT AJAT – Master-spesifikaatio & Arkkitehtuuridokumentti
-*Versio: 1.2.0 | Päivitetty: 24.10.2026*  
-*Tila: Julkaistu tuotantoon (Live)*  
+*Versio: 1.3.0 | Päivitetty: 24.10.2026*  
+*Tila: Kehitys lokaalissa (Tuotanto julkaistaan vain erillisestä käskystä)*  
 *🌐 Live URL:* [https://sopivat-ajat.vercel.app](https://sopivat-ajat.vercel.app)  
 *📦 GitHub:* [https://github.com/Sivumaakarit/sopivat-ajat](https://github.com/Sivumaakarit/sopivat-ajat)  
 
@@ -10,12 +10,16 @@
 
 **"Sopivat Ajat"** on moderni, visuaalisesti ensiluokkainen ja kognitiivista kuormitusta radikaalisti vähentävä verkkotyökalu koulujen arviointikeskustelujen ja yleisten tapaamisaikojen keräämiseen, sovitteluun ja vahvistamiseen.
 
-### Keskeiset uusimmat lisäykset (v1.2.0):
-* **Vapaa aloitusaikojen syöttö & aikahyppy (esim. 17:00):** Syöttökenttään voi vapaasti kirjoittaa minkä tahansa kellonajan (aiempi automaattilukitus korjattu). Enterillä aika lukittuu ja laskee päättymisajan heti.
-* **Toiveiden suorat vaihdot & "Jyräämisvaihtoehto":**
-  * Voit vaihtaa oppilaiden ajat keskenään päittäin (`⇄ Vaihda päittäin`).
-  * Voit myös siirtää oppilaan suoraan toisen päälle (`↳ Siirrä vain [Veeti]`).
-* **Älykäs turvavaroitus:** Jos jyräämisen seurauksena vapautuvalla oppilaalla (esim. Emma) ei ole enää yhtään muuta vapaata toivetta jäljellä, järjestelmä antaa selkeän varoituksen ennen hyväksymistä.
+### Keskeiset uusimmat lisäykset (v1.3.0):
+* **Puhdas nollalähtö (Zero-Start):**
+  * Sovellus käynnistyy aina puhtaalta nollapöydältä (0 päivää, 0 aikaa, 0 vastausta).
+  * Mitään mallipäiviä tai esimerkkivastauksia ei tyrkytetä valmiina.
+  * Käyttäjä aloittaa valitsemalla ensimmäisen päivämäärän suoraan kalenterista selkeällä aloituslomakkeella.
+* **Mobiilin hampurilaisvalikko (Hamburger Navigation Drawer):**
+  * Kapeilla mobiilinäytöillä (`< 768px`) yläpalkin välilehdet siirtyvät selkeän hampurilaispainikkeen (🍔 / `Menu`) taakse.
+  * Avaa sulavan ja ergonomisen sivupaneelin, jossa on suuret peukaloystävälliset kosketuspinnat (vähintään 48px), taustan sumennus (backdrop-filter) ja suora pääsy kaikkiin näkymiin sekä tietojen tyhjennykseen.
+* **Kehityspolitiikka:**
+  * Kaikki muutokset tehdään ja testataan ainoastaan lokaalisti. Tuotantoon (Git/Vercel) siirretään vasta kun käyttäjä antaa nimenomaisen ohjeen.
 
 ### Keskeinen ongelma ja ratkaisu:
 * **Ennen:** Opettaja printtaa kymmeniä paperilappuja reppuihin, huoltajat rastittavat kynällä aikoja, opettaja pyörittää paperikasaa pöydällään yrittäen manuaalisesti sovittaa 25 oppilaan toiveet ilman tuplabuukkauksia, ja kirjoittaa lopuksi jokaiselle Wilma-viestin käsin.

@@ -381,8 +381,15 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
           )}
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table className="matching-table">
+        {displayedSlots.length === 0 ? (
+          <div style={{ padding: '2.5rem 1rem', textAlign: 'center', background: '#f8fafc', border: '1.5px dashed #cbd5e1', borderRadius: '12px', color: '#64748b' }}>
+            <Clock size={32} style={{ margin: '0 auto 0.5rem auto', color: '#94a3b8' }} />
+            <h4 style={{ fontWeight: 700, color: '#334155', marginBottom: '0.25rem' }}>Ei vielä luotuja aikoja</h4>
+            <p style={{ fontSize: '0.88rem' }}>Siirry ylävalikosta "Aikojen hallinta" -näkymään lisätäksesi päiviä ja aikoja.</p>
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="matching-table">
             <thead>
               <tr>
                 <th style={{ width: '180px' }}>Päivä</th>
@@ -561,6 +568,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
             </tbody>
           </table>
         </div>
+        )}
       </div>
 
       {/* Unassigned Students Helper Box */}

@@ -21,116 +21,26 @@ export const SNOOPY_ILLUSTRATION = `data:image/svg+xml;utf8,<svg xmlns="http://w
   <path d="M52 118 L62 124 L72 118" stroke="%233b82f6" stroke-width="2.5" fill="none"/>
 </svg>`;
 
+// Clean initial state with ZERO days and ZERO submissions
 export const INITIAL_EVENT: ScheduleEvent = {
-  id: 'arviointi-syksy-2026',
+  id: 'arviointi-' + Date.now(),
   adminToken: 'opettaja-sala-avain',
-  title: 'Arviointikeskustelujen varaukset syksy 2026',
+  title: 'Arviointikeskustelujen varaukset',
   instructions:
-    'Heippa!\n\nOn aika aloittaa lukuvuoden arviointikeskustelut. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja. Tapaamiset järjestetään luokassamme.\n\nAlla on listattuna mahdollisia aikoja. Rastittakaa KAIKKI ne vaihtoehdot, jotka ovat teille sopivia. Vähintään kuitenkin 3 aikaa.\n\nPalautathan toiveesi viimeistään keskiviikkona 28.10.\nVahvistan teille varatun ajan Wilma-viestillä.\n\nYstävällisin terveisin Esko',
+    'Heippa!\n\nOn aika aloittaa lukuvuoden arviointikeskustelut. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja. Tapaamiset järjestetään luokassamme.\n\nAlla on listattuna mahdollisia aikoja. Rastittakaa KAIKKI ne vaihtoehdot, jotka ovat teille sopivia. Vähintään kuitenkin 3 aikaa.\n\nVahvistan teille varatun ajan Wilma-viestillä.\n\nYstävällisin terveisin Esko',
   imageUrl: SNOOPY_ILLUSTRATION,
   slotDurationMinutes: 20,
   minSelectionsRequired: 3,
-  deadlineDate: 'Keskiviikko 28.10.',
+  deadlineDate: '',
   teacherName: 'Esko',
   isLocked: false,
-  slots: [
-    // Syksy
-    { id: 's1', date: '2026-11-12', dateLabel: 'Torstai 12.11.', startTime: '13:15', endTime: '13:35', section: 'Marraskuu' },
-    { id: 's2', date: '2026-11-12', dateLabel: 'Torstai 12.11.', startTime: '13:35', endTime: '13:50', section: 'Marraskuu' },
-    { id: 's3', date: '2026-11-12', dateLabel: 'Torstai 12.11.', startTime: '13:50', endTime: '14:10', section: 'Marraskuu' },
-
-    { id: 's4', date: '2026-11-16', dateLabel: 'Maanantai 16.11.', startTime: '14:00', endTime: '14:20', section: 'Marraskuu' },
-    { id: 's5', date: '2026-11-16', dateLabel: 'Maanantai 16.11.', startTime: '14:20', endTime: '14:40', section: 'Marraskuu' },
-    { id: 's6', date: '2026-11-16', dateLabel: 'Maanantai 16.11.', startTime: '14:40', endTime: '15:00', section: 'Marraskuu' },
-
-    { id: 's7', date: '2026-11-17', dateLabel: 'Tiistai 17.11.', startTime: '13:15', endTime: '13:35', section: 'Marraskuu' },
-    { id: 's8', date: '2026-11-17', dateLabel: 'Tiistai 17.11.', startTime: '13:35', endTime: '13:50', section: 'Marraskuu' },
-    { id: 's9', date: '2026-11-17', dateLabel: 'Tiistai 17.11.', startTime: '13:50', endTime: '14:10', section: 'Marraskuu' },
-
-    { id: 's10', date: '2026-11-19', dateLabel: 'Torstai 19.11.', startTime: '13:15', endTime: '13:35', section: 'Marraskuu' },
-    { id: 's11', date: '2026-11-19', dateLabel: 'Torstai 19.11.', startTime: '13:35', endTime: '13:50', section: 'Marraskuu' },
-    { id: 's12', date: '2026-11-19', dateLabel: 'Torstai 19.11.', startTime: '13:50', endTime: '14:10', section: 'Marraskuu' },
-
-    // Joululoman jälkeen
-    { id: 's13', date: '2027-01-07', dateLabel: 'Torstai 7.1.', startTime: '13:15', endTime: '13:35', section: 'Joululoman jälkeen' },
-    { id: 's14', date: '2027-01-07', dateLabel: 'Torstai 7.1.', startTime: '13:35', endTime: '13:50', section: 'Joululoman jälkeen' },
-    { id: 's15', date: '2027-01-07', dateLabel: 'Torstai 7.1.', startTime: '13:50', endTime: '14:10', section: 'Joululoman jälkeen' },
-
-    { id: 's16', date: '2027-01-11', dateLabel: 'Maanantai 11.1.', startTime: '14:00', endTime: '14:20', section: 'Joululoman jälkeen' },
-    { id: 's17', date: '2027-01-11', dateLabel: 'Maanantai 11.1.', startTime: '14:20', endTime: '14:40', section: 'Joululoman jälkeen' },
-    { id: 's18', date: '2027-01-11', dateLabel: 'Maanantai 11.1.', startTime: '14:40', endTime: '15:00', section: 'Joululoman jälkeen' },
-
-    { id: 's19', date: '2027-01-12', dateLabel: 'Tiistai 12.1.', startTime: '13:15', endTime: '13:35', section: 'Joululoman jälkeen' },
-    { id: 's20', date: '2027-01-12', dateLabel: 'Tiistai 12.1.', startTime: '13:35', endTime: '13:50', section: 'Joululoman jälkeen' },
-    { id: 's21', date: '2027-01-12', dateLabel: 'Tiistai 12.1.', startTime: '13:50', endTime: '14:10', section: 'Joululoman jälkeen' },
-
-    { id: 's22', date: '2027-01-14', dateLabel: 'Torstai 14.1.', startTime: '13:15', endTime: '13:35', section: 'Joululoman jälkeen' },
-    { id: 's23', date: '2027-01-14', dateLabel: 'Torstai 14.1.', startTime: '13:35', endTime: '13:50', section: 'Joululoman jälkeen' },
-    { id: 's24', date: '2027-01-14', dateLabel: 'Torstai 14.1.', startTime: '13:50', endTime: '14:10', section: 'Joululoman jälkeen' },
-  ],
+  slots: [], // Täysin tyhjä: ei mitään valmiita päiviä tai aikoja
 };
 
-export const INITIAL_SUBMISSIONS: StudentSubmission[] = [
-  {
-    id: 'sub-1',
-    eventId: 'arviointi-syksy-2026',
-    firstName: 'Matti',
-    lastNameInitial: 'M',
-    selectedSlotIds: ['s1', 's2', 's3', 's7', 's8'],
-    submittedAt: '2026-10-24T09:12:00Z',
-  },
-  {
-    id: 'sub-2',
-    eventId: 'arviointi-syksy-2026',
-    firstName: 'Emma',
-    lastNameInitial: 'K',
-    selectedSlotIds: ['s1', 's4', 's5', 's10'],
-    submittedAt: '2026-10-24T10:04:00Z',
-  },
-  {
-    id: 'sub-3',
-    eventId: 'arviointi-syksy-2026',
-    firstName: 'Veeti',
-    lastNameInitial: 'L',
-    selectedSlotIds: ['s2', 's3', 's6', 's11', 's12'],
-    submittedAt: '2026-10-24T11:30:00Z',
-  },
-  {
-    id: 'sub-4',
-    eventId: 'arviointi-syksy-2026',
-    firstName: 'Aada',
-    lastNameInitial: 'R',
-    selectedSlotIds: ['s13', 's14', 's15', 's16'],
-    submittedAt: '2026-10-24T12:15:00Z',
-  },
-  {
-    id: 'sub-5',
-    eventId: 'arviointi-syksy-2026',
-    firstName: 'Esko',
-    lastNameInitial: 'K',
-    selectedSlotIds: ['s1', 's7', 's10', 's13'],
-    submittedAt: '2026-10-24T14:40:00Z',
-  },
-  {
-    id: 'sub-6',
-    eventId: 'arviointi-syksy-2026',
-    firstName: 'Sofia',
-    lastNameInitial: 'H',
-    selectedSlotIds: ['s4', 's5', 's6', 's16', 's17', 's18'],
-    submittedAt: '2026-10-24T15:20:00Z',
-  },
-  {
-    id: 'sub-7',
-    eventId: 'arviointi-syksy-2026',
-    firstName: 'Oliver',
-    lastNameInitial: 'T',
-    selectedSlotIds: ['s7', 's8', 's9', 's19', 's20'],
-    submittedAt: '2026-10-24T16:05:00Z',
-  },
-];
+export const INITIAL_SUBMISSIONS: StudentSubmission[] = []; // Täysin tyhjä: ei yhtään valmista vastausta
 
-const STORAGE_KEY_EVENT = 'sopivat_ajat_event';
-const STORAGE_KEY_SUBMISSIONS = 'sopivat_ajat_submissions';
+const STORAGE_KEY_EVENT = 'sopivat_ajat_clean_event_v3';
+const STORAGE_KEY_SUBMISSIONS = 'sopivat_ajat_clean_submissions_v3';
 
 export function getEvent(): ScheduleEvent {
   try {
@@ -205,4 +115,8 @@ export function assignStudentToSlot(slotId: string, studentId: string | null): S
 export function resetAllData(): void {
   localStorage.removeItem(STORAGE_KEY_EVENT);
   localStorage.removeItem(STORAGE_KEY_SUBMISSIONS);
+  localStorage.removeItem('sopivat_ajat_clean_event_v2');
+  localStorage.removeItem('sopivat_ajat_clean_submissions_v2');
+  localStorage.removeItem('sopivat_ajat_event');
+  localStorage.removeItem('sopivat_ajat_submissions');
 }

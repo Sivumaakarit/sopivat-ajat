@@ -409,6 +409,21 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                 const isAssigned = !!slot.assignedStudentId;
                 const assignedStudent = submissions.find(s => s.id === slot.assignedStudentId);
 
+                // Candidates who are not yet assigned anywhere OR are assigned to this exact slot
+                const unassignedCandidates = candidateStudents.filter(candidate => {
+                  const currentSlotId = assignedStudentMap.get(candidate.id);
+                  return !currentSlotId || currentSlotId === slot.id;
+                });
+
+                // Candidates who wished for this slot but are already locked to another slot
+                const alreadyAssignedCandidates = candidateStudents.filter(candidate => {
+                  const currentSlotId = assignedStudentMap.get(candidate.id);
+                  return currentSlotId && currentSlotId !== slot.id;
+                });
+
+                // Exactly one unassigned candidate left wishing for this slot
+                const soleUnassignedCandidate = !isAssigned && unassignedCandidates.length === 1 ? unassignedCandidates[0] : null;
+
                 // Is this slot among the hovered student's desired slots?
                 const isDesiredByHovered = activeStudentWishedSlots.includes(slot.id);
                 const isCurrentAssignedSlotForHovered = slot.id === activeStudentAssignedSlotId;
@@ -437,18 +452,32 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                     </td>
 
                     <td>
-                      <span style={{
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        color: candidateStudents.length > 0 ? '#2563eb' : '#94a3b8'
-                      }}>
-                        {candidateStudents.length > 0 ? `${candidateStudents.length} oppilasta` : '—'}
-                      </span>
+                      {candidateStudents.length === 0 ? (
+                        <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>—</span>
+                      ) : unassignedCandidates.length === 0 ? (
+                        <div style={{ fontSize: '0.82rem', lineHeight: 1.3 }}>
+                          <span style={{ fontWeight: 600, color: '#94a3b8' }}>0 vapaana</span>
+                          <span style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8' }}>
+                            ({alreadyAssignedCandidates.length} jo toisella ajalla)
+                          </span>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '0.85rem', lineHeight: 1.3 }}>
+                          <span style={{ fontWeight: 700, color: '#2563eb' }}>
+                            {unassignedCandidates.length} vapaana
+                          </span>
+                          {alreadyAssignedCandidates.length > 0 && (
+                            <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748b' }}>
+                              (yht. {candidateStudents.length} toivoi)
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </td>
 
                     <td>
                       <div
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}
                         onMouseEnter={() => {
                           if (slot.assignedStudentId) setHoveredStudentId(slot.assignedStudentId);
                         }}
@@ -458,12 +487,37 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                           value={slot.assignedStudentId || ''}
                           onChange={e => handleSelectStudent(slot.id, e.target.value || null)}
                           style={{
-                            borderColor: isAssigned ? '#86efac' : '#cbd5e1',
-                            background: isAssigned ? '#f0fdf4' : '#ffffff',
-                            fontWeight: isAssigned ? 700 : 500,
+                            borderColor: isAssigned
+                              ? '#86efac'
+                              : soleUnassignedCandidate
+                              ? '#3b82f6'
+                              : '#cbd5e1',
+                            borderStyle: !isAssigned && soleUnassignedCandidate ? 'dashed' : 'solid',
+                            borderWidth: !isAssigned && soleUnassignedCandidate ? '1.5px' : '1px',
+                            background: isAssigned
+                              ? '#f0fdf4'
+                              : soleUnassignedCandidate
+                              ? '#eff6ff'
+                              : '#ffffff',
+                            color: isAssigned
+                              ? '#15803d'
+                              : soleUnassignedCandidate
+                              ? '#1d4ed8'
+                              : '#1e293b',
+                            fontWeight: isAssigned ? 700 : soleUnassignedCandidate ? 600 : 500,
                           }}
                         >
-                          <option value="">-- Vapaa aika (ei valittua) --</option>
+                          <option value="">
+                            {isAssigned
+                              ? '-- Vapauta aika (poista valinta) --'
+                              : soleUnassignedCandidate
+                              ? `💡 Ehdotus: ${getStudentDisplayName(soleUnassignedCandidate, submissions)} (ei vielä lukittu)`
+                              : unassignedCandidates.length > 0
+                              ? `-- Vapaa aika (${unassignedCandidates.length} vapaana) --`
+                              : candidateStudents.length > 0
+                              ? `-- Vapaa aika (0 vapaana, ${candidateStudents.length} toisella ajalla) --`
+                              : '-- Vapaa aika (ei valittua) --'}
+                          </option>
                           {candidateStudents.map(candidate => {
                             const isAlreadyAssignedElsewhere =
                               assignedStudentMap.has(candidate.id) && assignedStudentMap.get(candidate.id) !== slot.id;
@@ -476,6 +530,33 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                             );
                           })}
                         </select>
+
+                        {/* Quick 1-click Lock Button for sole unassigned candidate */}
+                        {!isAssigned && soleUnassignedCandidate && (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectStudent(slot.id, soleUnassignedCandidate.id)}
+                            style={{
+                              background: '#2563eb',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: '6px',
+                              padding: '5px 10px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              whiteSpace: 'nowrap',
+                              boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)',
+                            }}
+                            title={`Lukitse ${soleUnassignedCandidate.firstName} tälle ajalle`}
+                          >
+                            <Check size={13} />
+                            <span>Lukitse {soleUnassignedCandidate.firstName}</span>
+                          </button>
+                        )}
                       </div>
                     </td>
 

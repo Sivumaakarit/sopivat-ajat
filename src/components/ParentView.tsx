@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   X,
   ExternalLink,
+  Clock,
 } from 'lucide-react';
 
 interface ParentViewProps {
@@ -274,7 +275,8 @@ export const ParentView: React.FC<ParentViewProps> = ({
   };
 
   const handleCopyWilma = () => {
-    const wilmaMsg = `Hei huoltajat!\n\nOn aika varata oppilaiden arviointikeskusteluajat. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t).\n\nKäykää valitsemassa teille sopivat ajat alla olevasta linkistä:\n${shareUrl}\n\nValitkaa yhteensä vähintään ${minRequired} teille sopivaa vaihtoehtoa. Vahvistan kullekin perheelle sovitun ajan Wilma-viestillä.\n\nYstävällisin terveisin,\n${event.teacherName || 'Opettaja'}`;
+    const deadlineNote = event.deadlineDate ? `\n\nVastausaika päättyy: ${event.deadlineDate}.` : '';
+    const wilmaMsg = `Hei huoltajat!\n\nOn aika varata oppilaiden arviointikeskusteluajat. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t).\n\nKäykää valitsemassa teille sopivat ajat alla olevasta linkistä:\n${shareUrl}\n\nValitkaa yhteensä vähintään ${minRequired} teille sopivaa vaihtoehtoa.${deadlineNote}\n\nVahvistan kullekin perheelle sovitun ajan Wilma-viestillä.\n\nYstävällisin terveisin,\n${event.teacherName || 'Opettaja'}`;
 
     navigator.clipboard.writeText(wilmaMsg);
     setCopiedWilma(true);
@@ -482,6 +484,26 @@ export const ParentView: React.FC<ParentViewProps> = ({
           <div style={{ flex: 1 }}>
             <h1 className="paper-title">{event.title}</h1>
             <div className="paper-instructions">{normalizeInstructions(event.instructions)}</div>
+            {event.deadlineDate && (
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#eff6ff',
+                  color: '#1d4ed8',
+                  padding: '4px 12px',
+                  borderRadius: '20px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  marginTop: '0.75rem',
+                  border: '1px solid #bfdbfe',
+                }}
+              >
+                <Clock size={14} />
+                <span>Vastausaika päättyy: {event.deadlineDate}</span>
+              </div>
+            )}
           </div>
         </div>
 

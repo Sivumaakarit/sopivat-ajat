@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { ScheduleEvent, StudentSubmission } from '../types';
+import type { ScheduleEvent, StudentSubmission, ViewMode } from '../types';
 import { getStudentDisplayName, sortSlotsChronologically } from '../utils/timeUtils';
 import { normalizeImageUrl } from '../services/storage';
 import {
@@ -12,16 +12,49 @@ import {
   ShieldCheck,
   X,
   MapPin,
+  Share2,
+  Copy,
+  Check,
+  MessageSquare,
 } from 'lucide-react';
 
 interface PublicViewProps {
   event: ScheduleEvent;
   submissions: StudentSubmission[];
+  isPreview?: boolean;
+  onNavigate?: (view: ViewMode) => void;
 }
 
-export const PublicView: React.FC<PublicViewProps> = ({ event, submissions }) => {
+export const PublicView: React.FC<PublicViewProps> = ({
+  event,
+  submissions,
+  isPreview,
+  onNavigate,
+}) => {
   const [searchName, setSearchName] = useState('');
   const [filterDay, setFilterDay] = useState<string>('ALL');
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedWilma, setCopiedWilma] = useState(false);
+
+  const teacherTarget = event.teacherName
+    ? (event.teacherName.toLowerCase().endsWith('lle') ? event.teacherName : `${event.teacherName}lle`)
+    : 'Eskolle';
+
+  const shareUrl = `${window.location.origin}${window.location.pathname}?e=${encodeURIComponent(event.id)}`;
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(shareUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  const handleCopyWilma = () => {
+    const wilmaMsg = `Hei huoltajat!\n\nLuokan arviointikeskustelujen aikataulu on nyt valmis ja vahvistettu!\n\nNäette oman perheenne vahvistetun ajan alla olevasta linkistä:\n${shareUrl}\n\n💡 Tuli esteitä tai toive vaihtaa päittäin?\nAikatauluja saa totta kai vielä vaihtaa keskenään! Jos sovitte toisen perheen kanssa vaihdosta päittäin, laittakaa siitä vain lyhyt viesti ${teacherTarget} Wilmassa, niin opettaja päivittää sen aikatauluun. Näinkin joskus sattuu ja se on täysin okei! 😊\n\nTervetuloa tapaamiseen omassa luokassamme sovittuna aikana!\n\nYstävällisin terveisin,\n${event.teacherName || 'Esko'}`;
+
+    navigator.clipboard.writeText(wilmaMsg);
+    setCopiedWilma(true);
+    setTimeout(() => setCopiedWilma(false), 2500);
+  };
 
   const sortedSlots = sortSlotsChronologically(event.slots);
   const distinctDays = Array.from(new Set(sortedSlots.map(s => s.dateLabel || s.date)));
@@ -56,6 +89,164 @@ export const PublicView: React.FC<PublicViewProps> = ({ event, submissions }) =>
 
   return (
     <div className="main-layout">
+      {/* 0. Teacher Sharing Banner (when in preview / teacher mode) */}
+      {isPreview && (
+        <div
+          className="card"
+          style={{
+            background: 'linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%)',
+            border: '2px solid #93c5fd',
+            padding: '1.25rem 1.5rem',
+            marginBottom: '1.5rem',
+            borderRadius: '14px',
+            boxShadow: '0 4px 15px rgba(37, 99, 235, 0.08)',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: '1rem',
+              flexWrap: 'wrap',
+              marginBottom: '1rem',
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  background: '#dbeafe',
+                  color: '#1d4ed8',
+                  padding: '0.25rem 0.65rem',
+                  borderRadius: '6px',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  marginBottom: '0.35rem',
+                }}
+              >
+                <Sparkles size={14} />
+                <span>Vaihe 4 / 4: Julkaistu aikataulu & jakaminen</span>
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
+                Jaa vahvistettu aikataulu huoltajille Wilmassa
+              </h3>
+              <p style={{ color: '#475569', fontSize: '0.9rem', margin: 0, maxWidth: '640px' }}>
+                Alla näet aikataulusivun sellaisena kuin huoltajat näkevät sen omalla laitteellaan (ilman tätä opettajan jakolaatikkoa).
+              </p>
+            </div>
+
+            {onNavigate && (
+              <button
+                type="button"
+                onClick={() => onNavigate('matching')}
+                style={{
+                  background: '#2563eb',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '0.65rem 1.25rem',
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                <span>Siirry aikasovitukseen (palapeli)</span>
+              </button>
+            )}
+          </div>
+
+          {/* Share Link Row & Wilma Copy */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '0.75rem',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              background: '#ffffff',
+              padding: '0.75rem 1rem',
+              borderRadius: '10px',
+              border: '1px solid #cbd5e1',
+            }}
+          >
+            <div
+              style={{
+                flex: 1,
+                minWidth: '240px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: '#f8fafc',
+                padding: '0.5rem 0.75rem',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <Share2 size={16} color="#64748b" />
+              <span
+                style={{
+                  fontSize: '0.85rem',
+                  color: '#0f172a',
+                  fontFamily: 'monospace',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  userSelect: 'all',
+                }}
+              >
+                {shareUrl}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className="btn-secondary"
+              style={{
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {copiedLink ? <Check size={16} color="#16a34a" /> : <Copy size={16} />}
+              <span>{copiedLink ? 'Linkki kopioitu! ✓' : 'Kopioi linkki'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCopyWilma}
+              style={{
+                background: '#16a34a',
+                color: '#ffffff',
+                border: 'none',
+                padding: '0.55rem 1.1rem',
+                borderRadius: '8px',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 2px 6px rgba(22, 163, 74, 0.2)',
+              }}
+            >
+              {copiedWilma ? <Check size={16} /> : <MessageSquare size={16} />}
+              <span>{copiedWilma ? 'Wilma-viesti kopioitu! ✓' : '📋 Kopioi valmis Wilma-viesti'}</span>
+            </button>
+          </div>
+        </div>
+      )}
       {/* 1. Header Card */}
       <div className="card">
         <div className="paper-header-box" style={{ borderBottom: 'none', marginBottom: '0.5rem', paddingBottom: 0 }}>
@@ -264,7 +455,7 @@ export const PublicView: React.FC<PublicViewProps> = ({ event, submissions }) =>
               Aikatauluja saa totta kai vielä vaihtaa keskenään! Jos teille tulee myöhemmin este tai toivotte toista aikaa, voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin.
             </p>
             <p style={{ color: '#475569', fontSize: '0.92rem', lineHeight: 1.6, margin: 0 }}>
-              Kun olette sopineet vaihdosta keskenänne, laittakaa siitä vain lyhyt viesti <strong>{event.teacherName || 'Eskolle'}</strong> Wilmassa – opettaja päivittää sen sitten aikatauluun. Näinkin joskus sattuu ja se on täysin okei! 😊
+              Kun olette sopineet vaihdosta keskenänne, laittakaa siitä vain lyhyt viesti <strong>{teacherTarget}</strong> Wilmassa – opettaja päivittää sen sitten aikatauluun. Näinkin joskus sattuu ja se on täysin okei! 😊
             </p>
           </div>
         </div>

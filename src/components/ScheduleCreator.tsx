@@ -20,6 +20,8 @@ import {
   Zap,
   ArrowRight,
   CheckCircle2,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 
 interface ScheduleCreatorProps {
@@ -341,6 +343,73 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
               onChange={e => onUpdateEvent({ ...event, minSelectionsRequired: parseInt(e.target.value, 10) || 3 })}
             />
           </div>
+
+          <div className="form-group">
+            <label className="form-label">Milloin kysely sulkeutuu? (Vastausaika päättyy)</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="esim. Perjantaina 6.11. klo 18:00"
+              value={event.deadlineDate || ''}
+              onChange={e => onUpdateEvent({ ...event, deadlineDate: e.target.value })}
+            />
+          </div>
+        </div>
+
+        {/* Manual survey closing control button */}
+        <div
+          style={{
+            background: event.isLocked ? '#fffbeb' : '#f8fafc',
+            border: event.isLocked ? '1.5px solid #fde68a' : '1.5px solid #e2e8f0',
+            borderRadius: '10px',
+            padding: '0.85rem 1rem',
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <div
+              style={{
+                background: event.isLocked ? '#fef3c7' : '#dcfce7',
+                color: event.isLocked ? '#b45309' : '#15803d',
+                padding: '0.45rem',
+                borderRadius: '8px',
+                display: 'flex',
+              }}
+            >
+              {event.isLocked ? <Lock size={18} /> : <Unlock size={18} />}
+            </div>
+            <div>
+              <strong style={{ fontSize: '0.92rem', color: '#0f172a', display: 'block' }}>
+                {event.isLocked ? 'Vastausaika on suljettu manuaalisesti' : 'Vastausaika on avoinna huoltajille'}
+              </strong>
+              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                {event.isLocked
+                  ? 'Huoltajat näkevät nyt odotusilmoituksen (palapeli käynnissä) eivätkä voi enää lähettää vastauksia.'
+                  : 'Voit sulkea kyselyn manuaalisesti etukäteen tästä painikkeesta milloin tahansa.'}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => onUpdateEvent({ ...event, isLocked: !event.isLocked })}
+            style={{
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              borderColor: event.isLocked ? '#f59e0b' : '#cbd5e1',
+              color: event.isLocked ? '#b45309' : '#334155',
+              background: '#ffffff',
+            }}
+          >
+            {event.isLocked ? <Unlock size={15} /> : <Lock size={15} />}
+            <span>{event.isLocked ? 'Avaa vastausaika' : 'Sulje vastausaika manuaalisesti'}</span>
+          </button>
         </div>
 
         <div className="form-group" style={{ marginBottom: 0 }}>

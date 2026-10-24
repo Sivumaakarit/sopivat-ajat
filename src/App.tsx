@@ -259,6 +259,8 @@ export function App() {
           <PublicView
             event={event}
             submissions={submissions}
+            isPreview={!isParentMode}
+            onNavigate={setCurrentView}
           />
         )}
       </main>

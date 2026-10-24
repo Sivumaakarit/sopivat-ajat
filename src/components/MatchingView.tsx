@@ -223,11 +223,63 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
       return max - min + 1 === combined.length;
     };
 
+    // Helper: never start an empty day at index > 0 if any unassigned student has selected slot 0 (or earlier slots < index)
+    const canStartDayAtIndex = (dayKey: string, index: number): boolean => {
+      if (index === 0) return true;
+      if (allowGaps) return true;
+      const daySlots = daySlotsMap.get(dayKey) || [];
+      for (let i = 0; i < index; i++) {
+        const earlierSlot = daySlots[i];
+        if (!earlierSlot) continue;
+        const hasWish = studentsToAssign.some(
+          s => !currentlyAssigned.has(s.id) && s.selectedSlotIds.includes(earlierSlot.id)
+        );
+        if (hasWish) {
+          return false;
+        }
+      }
+      return true;
+    };
+
     let assignedNow = 0;
+
+    // Priority 0: Ensure the first slot (index 0) of every day is filled first if any unassigned student wished for it!
+    // "Ensisijaisesti siis katso ettei odottelua jää opettajalle eli päivän eka aika täytetään aina jos siihen on varaus."
+    let firstSlotLoop = true;
+    while (firstSlotLoop) {
+      firstSlotLoop = false;
+      const candidates: { slot: TimeSlot; student: StudentSubmission }[] = [];
+
+      daySlotsMap.forEach((daySlots) => {
+        const firstSlot = daySlots[0];
+        if (firstSlot && !firstSlot.assignedStudentId) {
+          const eligibleStudents = studentsToAssign.filter(
+            s => !currentlyAssigned.has(s.id) && s.selectedSlotIds.includes(firstSlot.id)
+          );
+          if (eligibleStudents.length > 0) {
+            eligibleStudents.sort((a, b) => a.selectedSlotIds.length - b.selectedSlotIds.length);
+            candidates.push({ slot: firstSlot, student: eligibleStudents[0] });
+          }
+        }
+      });
+
+      if (candidates.length > 0) {
+        // Pick candidate whose student has fewest total wishes (MRV)
+        candidates.sort((a, b) => a.student.selectedSlotIds.length - b.student.selectedSlotIds.length);
+        const best = candidates[0];
+        best.slot.assignedStudentId = best.student.id;
+        currentlyAssigned.add(best.student.id);
+        assignedNow++;
+        firstSlotLoop = true;
+      }
+    }
+
     const unassignedInPhase1: StudentSubmission[] = [];
 
     // Phase 1: Assign respecting daily cap, no-gap contiguity, and balancing evenly across days
     for (const student of studentsToAssign) {
+      if (currentlyAssigned.has(student.id)) continue;
+
       const eligibleSlots = newSlots.filter(slot => {
         if (slot.assignedStudentId) return false;
         if (!student.selectedSlotIds.includes(slot.id)) return false;
@@ -241,6 +293,11 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
         // Daily cap check
         if (currentAssigned.length >= cap) return false;
 
+        // Never start an empty day skipping slot 0 if someone wants it
+        if (currentAssigned.length === 0 && !canStartDayAtIndex(meta.dayKey, meta.index)) {
+          return false;
+        }
+
         // Contiguity check (no gaps in between)
         return wouldBeContiguous(meta.dayKey, meta.index);
       });
@@ -249,7 +306,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
         // Sort candidate slots:
         // 1. Day with fewest assignments so far (spreads appointments evenly across all days)
         // 2. Extending an existing active block
-        // 3. Earlier slot index
+        // 3. Earlier slot index (starts as early as possible with no wait at the start)
         eligibleSlots.sort((a, b) => {
           const metaA = slotMetaMap.get(a.id)!;
           const metaB = slotMetaMap.get(b.id)!;
@@ -395,7 +452,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
 
     let text = '';
     if (event.isPublished) {
-      text = `Hei huoltajat!\n\nLuokan arviointikeskustelujen aikataulu on nyt valmis ja vahvistettu!\n\nNäette oman perheenne vahvistetun ajan alla olevasta linkistä:\n${shareUrl}\n\nAikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, laittakaa siitä vielä lyhyt viesti ${teacherTarget} Wilmassa 😊.\n\nTervetuloa tapaamiseen omassa luokassamme sovittuna aikana!\n\nYstävällisin terveisin,\n${event.teacherName || 'Esko'}`;
+      text = `Hei huoltajat!\n\nLuokan arviointikeskustelujen aikataulu on nyt valmis ja vahvistettu!\n\nNäette oman perheenne vahvistetun ajan alla olevasta linkistä:\n${shareUrl}\n\nAikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, tai tulee muita muutostarpeita laittakaa siitä lyhyt viesti ${teacherTarget} Wilmassa 😊.\n\nTervetuloa tapaamiseen omassa luokassamme sovittuna aikana!\n\nYstävällisin terveisin,\n${event.teacherName || 'Esko'}`;
     } else {
       const deadlineNote = event.deadlineDate ? `\n\nVastausaika päättyy: ${event.deadlineDate}.` : '';
       text = `Hei huoltajat!\n\nOn aika valita sopivat ajat lukuvuoden arviointikeskusteluille. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t).\n\nKäykää valitsemassa teille sopivat ajat alla olevasta linkistä:\n${shareUrl}\n\nValitkaa yhteensä vähintään ${event.minSelectionsRequired || 3} teille sopivaa vaihtoehtoa.${deadlineNote}\n\nYstävällisin terveisin,\n${event.teacherName || 'Esko'}`;

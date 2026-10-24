@@ -49,7 +49,7 @@ export const PublicView: React.FC<PublicViewProps> = ({
   };
 
   const handleCopyWilma = () => {
-    const wilmaMsg = `Hei huoltajat!\n\nLuokan arviointikeskustelujen aikataulu on nyt valmis ja vahvistettu!\n\nNäette oman perheenne vahvistetun ajan alla olevasta linkistä:\n${shareUrl}\n\nAikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, laittakaa siitä vielä lyhyt viesti ${teacherTarget} Wilmassa 😊.\n\nTervetuloa tapaamiseen omassa luokassamme sovittuna aikana!\n\nYstävällisin terveisin,\n${event.teacherName || 'Esko'}`;
+    const wilmaMsg = `Hei huoltajat!\n\nLuokan arviointikeskustelujen aikataulu on nyt valmis ja vahvistettu!\n\nNäette oman perheenne vahvistetun ajan alla olevasta linkistä:\n${shareUrl}\n\nAikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, tai tulee muita muutostarpeita laittakaa siitä lyhyt viesti ${teacherTarget} Wilmassa 😊.\n\nTervetuloa tapaamiseen omassa luokassamme sovittuna aikana!\n\nYstävällisin terveisin,\n${event.teacherName || 'Esko'}`;
 
     navigator.clipboard.writeText(wilmaMsg);
     setCopiedWilma(true);
@@ -453,7 +453,7 @@ export const PublicView: React.FC<PublicViewProps> = ({
               Tuli esteitä tai toive vaihtaa päittäin?
             </h3>
             <p style={{ color: '#475569', fontSize: '0.92rem', lineHeight: 1.6, margin: 0 }}>
-              Aikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, laittakaa siitä vielä lyhyt viesti <strong>{teacherTarget}</strong> Wilmassa 😊.
+              Aikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, tai tulee muita muutostarpeita laittakaa siitä lyhyt viesti <strong>{teacherTarget}</strong> Wilmassa 😊.
             </p>
           </div>
         </div>

@@ -224,7 +224,7 @@ export const ParentView: React.FC<ParentViewProps> = ({
           Toiveesi on tallennettu onnistuneesti oppilaalle <strong>{firstName} {lastNameInitial.toUpperCase()}.</strong>
         </p>
         <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '2rem' }}>
-          Opettaja {event.teacherName} vahvistaa lopullisen arviointikeskusteluajan Wilma-viestillä.
+          {event.teacherName ? `${event.teacherName}-opettaja` : 'Opettaja'} vahvistaa lopullisen arviointikeskusteluajan myöhemmin Wilman kautta.
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
           <button
@@ -236,31 +236,8 @@ export const ParentView: React.FC<ParentViewProps> = ({
               setLastNameInitial('');
             }}
           >
-            Lähetä toinen vastaus (toinen lapsi)
+            Lähetä toinen vastaus (jos sinulla on toinen lapsi samalla luokalla)
           </button>
-
-          {isPreview && onNavigate && (
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => onNavigate('matching')}
-              style={{
-                background: '#16a34a',
-                border: 'none',
-                fontWeight: 800,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.65rem 1.3rem',
-                borderRadius: '8px',
-                color: '#ffffff',
-                cursor: 'pointer',
-              }}
-            >
-              <span>Siirry aikasovitukseen (palapeli)</span>
-              <ArrowRight size={18} />
-            </button>
-          )}
         </div>
       </div>
     );

@@ -6,6 +6,8 @@ import {
   groupSlotsByDate,
   getNextBusinessDay,
   sortSlotsChronologically,
+  formatFinnishDateLabel,
+  FINNISH_MONTHS,
 } from '../utils/timeUtils';
 import {
   Plus,
@@ -51,13 +53,9 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
     return '';
   });
 
-  // Sync state if slots are cleared (reset to 0)
+  // Sync state if slots are populated but no day selected yet
   React.useEffect(() => {
-    if (event.slots.length === 0 && !customDateValue && !customDayLabel) {
-      setSelectedDateLabel('');
-      setSelectedDate('');
-      setSelectedSection('');
-    } else if (event.slots.length > 0 && !selectedDateLabel) {
+    if (event.slots.length > 0 && !selectedDateLabel) {
       setSelectedDateLabel(event.slots[0].dateLabel || event.slots[0].date);
       setSelectedDate(event.slots[0].date);
       setSelectedSection(event.slots[0].section || '');
@@ -66,12 +64,6 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
 
   // Input for the next slot (user can freely type 17:00 or any time)
   const [startTimeInput, setStartTimeInput] = useState('13:15');
-
-  // Custom day input state
-  const [showCustomDayInput, setShowCustomDayInput] = useState(false);
-  const [customDateValue, setCustomDateValue] = useState('');
-  const [customDayLabel, setCustomDayLabel] = useState('');
-  const [customSection, setCustomSection] = useState('Marraskuu');
 
   // Find slots of active day, always sorted chronologically
   const currentDaySlots = sortSlotsChronologically(
@@ -116,9 +108,19 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
   const handleDeleteDay = (dayLabel: string) => {
     const slotsInDay = event.slots.filter(s => s.dateLabel === dayLabel || s.date === dayLabel);
     if (slotsInDay.length === 0) {
-      setSelectedDateLabel('');
-      setSelectedDate('');
-      setSelectedSection('');
+      const remainingDays = distinctDayLabels.filter(d => d !== dayLabel);
+      if (remainingDays.length > 0) {
+        setSelectedDateLabel(remainingDays[0]);
+        const matched = event.slots.find(s => s.dateLabel === remainingDays[0]);
+        if (matched) {
+          setSelectedDate(matched.date);
+          setSelectedSection(matched.section || '');
+        }
+      } else {
+        setSelectedDateLabel('');
+        setSelectedDate('');
+        setSelectedSection('');
+      }
       return;
     }
     if (
@@ -171,65 +173,52 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
     }
   };
 
-  // When date is chosen from date picker, auto-generate Finnish weekday name!
-  const handleCalendarPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const isoDate = e.target.value;
-    if (!isoDate) return;
-    setCustomDateValue(isoDate);
-
-    const d = new Date(isoDate + 'T00:00:00');
-    const weekdays = [
-      'Sunnuntai',
-      'Maanantai',
-      'Tiistai',
-      'Keskiviikko',
-      'Torstai',
-      'Perjantai',
-      'Lauantai',
-    ];
-    const weekday = weekdays[d.getDay()];
-    const dayNum = d.getDate();
-    const monthNum = d.getMonth() + 1;
-    const generatedLabel = `${weekday} ${dayNum}.${monthNum}.`;
-    setCustomDayLabel(generatedLabel);
-  };
-
-  const handleAddCustomDay = () => {
-    if (!customDayLabel.trim()) return;
-    setSelectedDateLabel(customDayLabel.trim());
-    setSelectedDate(customDateValue || new Date().toISOString().split('T')[0]);
-    setSelectedSection(customSection.trim());
-    setCustomDayLabel('');
-    setCustomDateValue('');
-    setShowCustomDayInput(false);
-  };
-
-  // Quick-add specific day (e.g. next business day)
+  // Quick-add or switch to a specific day
   const handleAddSpecificDay = (isoDate: string, dayLabel: string, section?: string) => {
     setSelectedDateLabel(dayLabel);
     setSelectedDate(isoDate);
     setSelectedSection(section || '');
-    setCustomDayLabel('');
-    setCustomDateValue('');
-    setShowCustomDayInput(false);
+
+    // Set smart start time
+    const existingDaySlots = event.slots.filter(s => s.dateLabel === dayLabel);
+    if (existingDaySlots.length > 0) {
+      const last = existingDaySlots[existingDaySlots.length - 1];
+      setStartTimeInput(last.endTime);
+    } else {
+      setStartTimeInput(dayLabel.includes('Maanantai') ? '14:00' : '13:15');
+    }
   };
 
-  // Distinct day labels currently in the schedule, ordered chronologically
-  const distinctDayLabels = Array.from(new Set(sortSlotsChronologically(event.slots).map(s => s.dateLabel || s.date)));
+  // Direct 1-click calendar picker: picks date, generates Finnish label and creates/activates day immediately
+  const handleCalendarDirectSelect = (isoDate: string) => {
+    if (!isoDate) return;
+    const d = new Date(isoDate + 'T12:00:00');
+    if (isNaN(d.getTime())) return;
+
+    const label = formatFinnishDateLabel(isoDate);
+    const month = FINNISH_MONTHS[d.getMonth()] || '';
+
+    // If day already exists in schedule, preserve its label/section
+    const existing = event.slots.find(s => s.date === isoDate || s.dateLabel === label);
+    const targetLabel = existing?.dateLabel || label;
+    const targetSection = existing?.section || month;
+
+    handleAddSpecificDay(isoDate, targetLabel, targetSection);
+  };
+
+  // Distinct day labels currently in the schedule, ordered chronologically, including currently selected day
+  const slotDayLabels = Array.from(new Set(sortSlotsChronologically(event.slots).map(s => s.dateLabel || s.date)));
+  const distinctDayLabels = Array.from(
+    new Set([
+      ...slotDayLabels,
+      ...(selectedDateLabel ? [selectedDateLabel] : []),
+    ])
+  );
   const groupedDays = groupSlotsByDate(event.slots);
 
   // Compute next business day suggestion (skips weekends!)
   const referenceDate = selectedDate || (event.slots.length > 0 ? event.slots[event.slots.length - 1].date : new Date().toISOString().split('T')[0]);
   const nextBusinessDay = getNextBusinessDay(referenceDate);
-
-  const handleOpenCustomDay = () => {
-    if (!showCustomDayInput) {
-      setCustomDateValue(nextBusinessDay.isoDate);
-      setCustomDayLabel(nextBusinessDay.dateLabel);
-      setCustomSection(nextBusinessDay.section);
-    }
-    setShowCustomDayInput(!showCustomDayInput);
-  };
 
   return (
     <div className="main-layout">
@@ -458,86 +447,51 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
               <span>+ Seuraava arkipäivä: <strong>{nextBusinessDay.dateLabel}</strong></span>
             </button>
 
-            <button
-              type="button"
+            {/* 1-click date picker directly from calendar */}
+            <label
               className="btn-primary"
-              style={{ fontSize: '0.85rem', padding: '0.45rem 0.85rem' }}
-              onClick={handleOpenCustomDay}
+              title="Valitse päivämäärä kalenterista"
+              style={{
+                position: 'relative',
+                fontSize: '0.85rem',
+                padding: '0.45rem 0.85rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                cursor: 'pointer',
+                overflow: 'hidden',
+              }}
             >
               <Calendar size={15} />
               <span>📅 Valitse muu päivä...</span>
-            </button>
+              <input
+                type="date"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  opacity: 0,
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                }}
+                value=""
+                onChange={e => {
+                  if (e.target.value) {
+                    handleCalendarDirectSelect(e.target.value);
+                    e.target.value = '';
+                  }
+                }}
+                onClick={e => {
+                  try {
+                    (e.target as HTMLInputElement).showPicker?.();
+                  } catch (err) {}
+                }}
+              />
+            </label>
           </div>
         </div>
-
-        {/* Modal / Inline Add New Day from Calendar */}
-        {showCustomDayInput && (
-          <div style={{
-            background: '#eff6ff',
-            border: '1.5px solid #93c5fd',
-            borderRadius: '12px',
-            padding: '1.25rem',
-            marginBottom: '1.5rem',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem'
-          }}>
-            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1e40af' }}>
-              Valitse uusi päivämäärä kalenterista:
-            </h4>
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-              <div>
-                <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span>📅</span>
-                  <span>Päivämäärä</span>
-                </label>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <span style={{ position: 'absolute', left: '10px', fontSize: '1.2rem', pointerEvents: 'none', zIndex: 1 }}>📅</span>
-                  <input
-                    type="date"
-                    className="form-input"
-                    style={{ width: '175px', paddingLeft: '2.5rem', fontWeight: 700, cursor: 'pointer', height: '42px' }}
-                    value={customDateValue}
-                    onChange={handleCalendarPickerChange}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label" style={{ fontSize: '0.8rem' }}>Suomenkielinen otsikko</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  style={{ width: '220px' }}
-                  placeholder="esim. Keskiviikko 18.11."
-                  value={customDayLabel}
-                  onChange={e => setCustomDayLabel(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="form-label" style={{ fontSize: '0.8rem' }}>Jakso (valinnainen)</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  style={{ width: '160px' }}
-                  placeholder="esim. Marraskuu"
-                  value={customSection}
-                  onChange={e => setCustomSection(e.target.value)}
-                />
-              </div>
-
-              <div style={{ alignSelf: 'flex-end', display: 'flex', gap: '0.5rem' }}>
-                <button type="button" className="btn-primary" onClick={handleAddCustomDay}>
-                  Luo päivä
-                </button>
-                <button type="button" className="btn-secondary" onClick={() => setShowCustomDayInput(false)}>
-                  Peruuta
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Zero-state onboarding card when no days are defined yet */}
         {!selectedDateLabel && distinctDayLabels.length === 0 ? (
@@ -566,66 +520,74 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
               Lomake aloittaa puhtaalta nollapöydältä. Valitse kalenterista ensimmäinen päivämäärä, jolle haluat tarjota aikoja.
             </p>
 
-            {/* Inline First Day Picker */}
-            <div style={{
-              maxWidth: '520px',
-              margin: '0 auto',
-              background: '#ffffff',
-              border: '1.5px solid #bfdbfe',
-              borderRadius: '12px',
-              padding: '1.25rem',
-              textAlign: 'left',
-              boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.08)',
-            }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                <div>
-                  <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span>📅</span>
-                    <span>1. Valitse päivämäärä kalenterista</span>
-                  </label>
-                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                    <span style={{ position: 'absolute', left: '10px', fontSize: '1.25rem', pointerEvents: 'none', zIndex: 1 }}>📅</span>
-                    <input
-                      type="date"
-                      className="form-input"
-                      style={{ paddingLeft: '2.5rem', fontWeight: 700, cursor: 'pointer', height: '42px', fontSize: '0.95rem' }}
-                      value={customDateValue}
-                      onChange={handleCalendarPickerChange}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 700 }}>2. Suomenkielinen otsikko</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="esim. Maanantai 16.11."
-                    value={customDayLabel}
-                    onChange={e => setCustomDayLabel(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <div style={{ flex: 1, minWidth: '150px' }}>
-                  <label className="form-label" style={{ fontSize: '0.8rem' }}>Jakso (valinnainen)</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="esim. Syksy"
-                    value={customSection}
-                    onChange={e => setCustomSection(e.target.value)}
-                  />
-                </div>
-                <button
-                  type="button"
-                  className="btn-primary"
-                  style={{ alignSelf: 'flex-end', padding: '0.55rem 1.25rem', fontWeight: 700 }}
-                  disabled={!customDayLabel.trim()}
-                  onClick={handleAddCustomDay}
-                >
-                  ✨ Luo ensimmäinen päivä
-                </button>
-              </div>
+            {/* Direct 1-Click Day Starters */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => handleAddSpecificDay(nextBusinessDay.isoDate, nextBusinessDay.dateLabel, nextBusinessDay.section)}
+                className="btn-secondary"
+                style={{
+                  background: '#f0fdf4',
+                  borderColor: '#86efac',
+                  color: '#15803d',
+                  padding: '0.75rem 1.25rem',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  cursor: 'pointer',
+                  borderRadius: '10px',
+                }}
+              >
+                <Zap size={18} color="#16a34a" />
+                <span>+ Aloita seuraavasta arkipäivästä: <strong>{nextBusinessDay.dateLabel}</strong></span>
+              </button>
+
+              <label
+                className="btn-primary"
+                title="Valitse päivämäärä kalenterista"
+                style={{
+                  position: 'relative',
+                  padding: '0.75rem 1.25rem',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  cursor: 'pointer',
+                  borderRadius: '10px',
+                  overflow: 'hidden',
+                }}
+              >
+                <Calendar size={18} />
+                <span>📅 Valitse päivä kalenterista</span>
+                <input
+                  type="date"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0,
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                  }}
+                  value=""
+                  onChange={e => {
+                    if (e.target.value) {
+                      handleCalendarDirectSelect(e.target.value);
+                      e.target.value = '';
+                    }
+                  }}
+                  onClick={e => {
+                    try {
+                      (e.target as HTMLInputElement).showPicker?.();
+                    } catch (err) {}
+                  }}
+                />
+              </label>
             </div>
           </div>
         ) : (

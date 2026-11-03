@@ -240,33 +240,24 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
                 type="button"
                 onClick={() => onNavigate('parent')}
                 style={{
-                  background: '#16a34a',
+                  background: 'var(--primary)',
                   color: '#ffffff',
                   border: 'none',
-                  padding: '0.55rem 1.25rem',
-                  borderRadius: '8px',
-                  fontWeight: 800,
+                  padding: '0.6rem 1.35rem',
+                  borderRadius: 'var(--radius-full)',
+                  fontWeight: 600,
                   fontSize: '0.92rem',
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.5rem',
-                  boxShadow: '0 2px 8px rgba(22, 163, 74, 0.25)',
+                  boxShadow: '0 2px 8px rgba(0, 113, 227, 0.28)',
+                  transition: 'all 0.2s var(--apple-spring)',
                 }}
                 title="Esikatsele huoltajanäkymää ja kopioi jakolinkki Wilmaan"
               >
                 <span>Vaihe 2: Esikatsele ja jaa huoltajille</span>
                 <ArrowRight size={17} />
-              </button>
-
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => onNavigate('matching')}
-                title="Siirry suoraan aikasovitukseen (palapeli)"
-                style={{ fontWeight: 600, fontSize: '0.85rem' }}
-              >
-                <span>Aikasovitus (palapeli)</span>
               </button>
             </>
           ) : (
@@ -884,7 +875,7 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
                     Keskusteluajat luotu ({event.slots.length} aikaa {distinctDayLabels.length} päivälle)
                   </h4>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '2px 0 0 0' }}>
-                    Siirry seuraavaksi tarkastelemaan toiveita tai esikatsele huoltajanäkymää.
+                    Siirry seuraavaksi esikatselemaan lomaketta ja jakamaan jakolinkki huoltajille.
                   </p>
                 </div>
               </div>
@@ -912,15 +903,6 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
                 >
                   <span>Vaihe 2: Esikatsele ja jaa huoltajille</span>
                   <ArrowRight size={17} />
-                </button>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => onNavigate('matching')}
-                  style={{ fontWeight: 600 }}
-                  title="Siirry suoraan aikasovitukseen (palapeli)"
-                >
-                  <span>Aikasovitus (palapeli)</span>
                 </button>
               </div>
             </div>
@@ -1037,7 +1019,7 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
               Päivät ja ajat on luotu! Siirrytäänkö eteenpäin?
             </h3>
             <p style={{ opacity: 0.92, fontSize: '0.9rem', margin: 0 }}>
-              Siirry aikasovitukseen tarkastelemaan toiveita tai jaa julkinen linkki huoltajille Wilmassa.
+              Esikatsele luotu lomake ja jaa valmis linkki huoltajille Wilmassa.
             </p>
           </div>
 
@@ -1063,27 +1045,6 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
             >
               <span>Vaihe 2: Esikatsele ja jaa huoltajille</span>
               <ArrowRight size={17} />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onNavigate('matching')}
-              style={{
-                background: 'rgba(255, 255, 255, 0.16)',
-                color: '#ffffff',
-                border: '1px solid rgba(255, 255, 255, 0.35)',
-                padding: '0.7rem 1.25rem',
-                borderRadius: 'var(--radius-full)',
-                fontWeight: 600,
-                fontSize: '0.92rem',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.2s var(--apple-spring)',
-              }}
-            >
-              <span>Siirry aikasovitukseen</span>
             </button>
           </div>
         </div>

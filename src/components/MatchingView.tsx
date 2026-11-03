@@ -1494,7 +1494,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
             </div>
 
             <div className="name-input-container" style={{ marginBottom: '1rem' }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
+              <div className="name-input-first form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">Etunimi *</label>
                 <input
                   type="text"
@@ -1504,16 +1504,15 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                   onChange={e => setManualFirst(e.target.value)}
                 />
               </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
+              <div className="name-input-initial form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">Sukunimen 1. kirjain *</label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="esim. P"
+                  placeholder="M"
                   maxLength={1}
                   value={manualInitial}
                   onChange={e => setManualInitial(e.target.value.toUpperCase())}
-                  style={{ textAlign: 'center', fontWeight: 700 }}
                 />
               </div>
             </div>

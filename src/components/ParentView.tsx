@@ -504,7 +504,7 @@ export const ParentView: React.FC<ParentViewProps> = ({
                 id="lastNameInitial"
                 type="text"
                 className="form-input"
-                placeholder="esim. M"
+                placeholder="M"
                 maxLength={1}
                 value={lastNameInitial}
                 onChange={e => setLastNameInitial(e.target.value.toUpperCase())}

@@ -409,6 +409,15 @@ button:active:not(:disabled),
   box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.18);
 }
 
+/* Standard Placeholder styling across all form inputs (Apple system gray) */
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: #8e8e93;
+  opacity: 1;
+  font-weight: 400;
+  font-size: 0.95rem;
+}
+
 /* GDPR Student Name Input Box */
 .name-input-container {
   display: flex;
@@ -427,6 +436,7 @@ button:active:not(:disabled),
   height: 42px;
   box-sizing: border-box;
   font-size: 0.95rem;
+  font-weight: 400;
 }
 
 .name-input-initial {
@@ -445,10 +455,10 @@ button:active:not(:disabled),
   box-sizing: border-box;
   text-align: center !important;
   font-size: 0.95rem !important;
-  font-weight: 600 !important;
+  font-weight: 400 !important;
   color: var(--text-main) !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.04em;
+  letter-spacing: normal !important;
   padding: 0.65rem 0.4rem !important;
   border-radius: var(--radius-md) !important;
 }
@@ -457,8 +467,8 @@ button:active:not(:disabled),
   text-transform: uppercase !important;
   font-size: 0.95rem !important;
   font-weight: 400 !important;
-  color: #94a3b8 !important;
-  opacity: 0.7;
+  color: #8e8e93 !important;
+  opacity: 1 !important;
   text-align: center !important;
 }
 

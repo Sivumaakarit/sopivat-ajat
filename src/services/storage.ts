@@ -19,14 +19,14 @@ export function normalizeImageUrl(imageUrl?: string): string {
 export const INITIAL_EVENT: ScheduleEvent = {
   id: 'arviointi-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
   adminToken: 'opettaja-sala-avain',
-  title: 'Arviointikeskustelujen varaukset',
+  title: 'Arviointikeskustelujen varaukset 5A',
   instructions:
-    'Heippa!\n\nOn aika aloittaa lukuvuoden arviointikeskustelut. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t). Tapaamiset järjestetään luokassamme.\n\nAlla on listattuna mahdollisia aikoja. Rastittakaa KAIKKI ne vaihtoehdot, jotka ovat teille sopivia. Vähintään kuitenkin 3 aikaa.\n\nVahvistan teille varatun ajan Wilma-viestillä.\n\nYstävällisin terveisin Esko',
+    'Heippa!\n\nOn aika aloittaa lukuvuoden arviointikeskustelut. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t). Tapaamiset järjestetään luokassamme.\n\nAlla on listattuna mahdollisia aikoja. Rastittakaa KAIKKI ne vaihtoehdot, jotka ovat teille sopivia. Vähintään kuitenkin 3 aikaa.\n\nVahvistan teille varatun ajan Wilma-viestillä.\n\nYstävällisin terveisin opettaja',
   imageUrl: SOPIVAT_AJAT_LOGO,
   slotDurationMinutes: 20,
   minSelectionsRequired: 3,
   deadlineDate: '',
-  teacherName: 'Esko',
+  teacherName: '',
   isLocked: false,
   isPublished: false,
   slots: [],
@@ -61,8 +61,17 @@ export function getEvent(): ScheduleEvent {
     parsed.slots = sortSlotsChronologically(parsed.slots || []);
     parsed.imageUrl = normalizeImageUrl(parsed.imageUrl);
     parsed.isPublished = Boolean(parsed.isPublished);
+    if (parsed.title === 'Arviointikeskustelujen varaukset') {
+      parsed.title = 'Arviointikeskustelujen varaukset 5A';
+    }
+    if (parsed.teacherName === 'Esko') {
+      parsed.teacherName = '';
+    }
     if (parsed.instructions) {
       parsed.instructions = normalizeInstructions(parsed.instructions);
+      if (parsed.instructions.includes('Ystävällisin terveisin Esko')) {
+        parsed.instructions = parsed.instructions.replace('Ystävällisin terveisin Esko', 'Ystävällisin terveisin opettaja');
+      }
     }
     return parsed;
   } catch {

@@ -344,10 +344,14 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
         {/* Row 1: Tapahtuman otsikko & Opettajan nimi */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '0.25rem' }}>
           <div className="form-group">
-            <label className="form-label">Tapahtuman otsikko</label>
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.25rem' }}>
+              <span>Tapahtuman otsikko</span>
+              <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>(vaihda ainakin luokka oikeaksi)</span>
+            </label>
             <input
               type="text"
               className="form-input"
+              placeholder="Arviointikeskustelujen varaukset 5A"
               value={event.title}
               onChange={e => onUpdateEvent({ ...event, title: e.target.value })}
             />
@@ -358,6 +362,7 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
             <input
               type="text"
               className="form-input"
+              placeholder="Oma nimi"
               value={event.teacherName}
               onChange={e => onUpdateEvent({ ...event, teacherName: e.target.value })}
             />
@@ -600,7 +605,10 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
         </div>
 
         <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label">Ohjeet huoltajille</label>
+          <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.25rem' }}>
+            <span>Ohjeet huoltajille</span>
+            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>(vaihda ainakin luokka oikeaksi)</span>
+          </label>
           <textarea
             className="form-textarea"
             rows={4}

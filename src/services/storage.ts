@@ -21,7 +21,7 @@ export const INITIAL_EVENT: ScheduleEvent = {
   adminToken: 'opettaja-sala-avain',
   title: 'Arviointikeskustelujen varaukset 5A',
   instructions:
-    'Heippa!\n\nOn aika aloittaa lukuvuoden arviointikeskustelut. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t). Tapaamiset järjestetään luokassamme.\n\nAlla on listattuna mahdollisia aikoja. Rastittakaa KAIKKI ne vaihtoehdot, jotka ovat teille sopivia. Vähintään kuitenkin 3 aikaa. Mikäli mikään näistä ajoista ei sovi, olkaa yhteydessä opettajaan Wilmassa, niin sovitaan toinen aika.\n\n💡 Vinkki: Valitse aikoja mielellään vähintään kahdelta eri päivältä – näin varmistat perheellenne sopivan ajan!\n\nVahvistan teille varatun ajan Wilma-viestillä.\n\nYstävällisin terveisin opettaja',
+    'Heippa!\n\nOn aika aloittaa lukuvuoden arviointikeskustelut. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t). Tapaamiset järjestetään luokassamme.\n\nAlla on listattuna mahdollisia aikoja. Rastittakaa kaikki ne vaihtoehdot, jotka ovat teille sopivia. Vähintään kuitenkin kolme aikaa. Mikäli mikään näistä ajoista ei sovi, olkaa yhteydessä opettajaan Wilmassa, niin sovitaan toinen aika.\n\nVinkki: Valitse aikoja mielellään vähintään kahdelta eri päivältä – näin varmistat perheellenne sopivan ajan!\n\nVahvistan teille varatun ajan Wilma-viestillä.\n\nYstävällisin terveisin',
   imageUrl: SOPIVAT_AJAT_LOGO,
   slotDurationMinutes: 20,
   minSelectionsRequired: 3,
@@ -48,21 +48,32 @@ export function normalizeInstructions(instructions: string): string {
   );
   text = text.replace('kodin edustaja.', 'kodin edustaja(t).');
 
+  // Ensure lowercase "kaikki" and word "kolme"
+  text = text.replace('Rastittakaa KAIKKI ne', 'Rastittakaa kaikki ne');
+  text = text.replace('Vähintään kuitenkin 3 aikaa.', 'Vähintään kuitenkin kolme aikaa.');
+
   // Ensure Wilma contact fallback is included
-  if (text.includes('Vähintään kuitenkin 3 aikaa.') && !text.includes('Wilmassa, niin')) {
+  if (text.includes('Vähintään kuitenkin kolme aikaa.') && !text.includes('Wilmassa, niin')) {
     text = text.replace(
-      'Vähintään kuitenkin 3 aikaa.',
-      'Vähintään kuitenkin 3 aikaa. Mikäli mikään näistä ajoista ei sovi, olkaa yhteydessä opettajaan Wilmassa, niin sovitaan toinen aika.'
+      'Vähintään kuitenkin kolme aikaa.',
+      'Vähintään kuitenkin kolme aikaa. Mikäli mikään näistä ajoista ei sovi, olkaa yhteydessä opettajaan Wilmassa, niin sovitaan toinen aika.'
     );
   }
 
-  // Ensure two-day friendly tip is included in instructions
+  // Ensure two-day friendly tip is included in instructions (clean "Vinkki:")
   if (!text.includes('vähintään kahdelta eri päivältä') && text.includes('Wilmassa, niin sovitaan toinen aika.')) {
     text = text.replace(
       'Wilmassa, niin sovitaan toinen aika.',
-      'Wilmassa, niin sovitaan toinen aika.\n\n💡 Vinkki: Valitse aikoja mielellään vähintään kahdelta eri päivältä – näin varmistat perheellenne sopivan ajan!'
+      'Wilmassa, niin sovitaan toinen aika.\n\nVinkki: Valitse aikoja mielellään vähintään kahdelta eri päivältä – näin varmistat perheellenne sopivan ajan!'
     );
+  } else if (text.includes('💡 Vinkki: Valitse aikoja mielellään')) {
+    text = text.replace('💡 Vinkki: Valitse aikoja mielellään', 'Vinkki: Valitse aikoja mielellään');
   }
+
+  // Ensure clean closing greeting: "Ystävällisin terveisin"
+  text = text.replace('Ystävällisin terveisin opettaja', 'Ystävällisin terveisin');
+  text = text.replace('Ystävällisin terveisin Esko', 'Ystävällisin terveisin');
+
   return text;
 }
 
@@ -85,9 +96,6 @@ export function getEvent(): ScheduleEvent {
     }
     if (parsed.instructions) {
       parsed.instructions = normalizeInstructions(parsed.instructions);
-      if (parsed.instructions.includes('Ystävällisin terveisin Esko')) {
-        parsed.instructions = parsed.instructions.replace('Ystävällisin terveisin Esko', 'Ystävällisin terveisin opettaja');
-      }
     }
     return parsed;
   } catch {

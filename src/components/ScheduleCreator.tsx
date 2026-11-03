@@ -641,7 +641,7 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.25rem' }}>
             <span>Ohjeet huoltajille</span>
-            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>(vaihda ainakin luokka oikeaksi)</span>
+            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>(vaihda ainakin valintojen määrä oikeaksi)</span>
           </label>
           <textarea
             className="form-textarea"
@@ -1075,7 +1075,7 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
           <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Sparkles size={14} color="#2563eb" />
             <span>
-              <strong>Pikanäppäin:</strong> Voit kirjoittaa aloitusajan (esim. 17:00) ja painaa suoraan <strong>Enter</strong>! Järjestelmä laskee keston ja luo aikahypyn automaattisesti.
+              <strong>Pikanäppäin:</strong> Voit kirjoittaa aloitusajan (esim. 17:00) ja painaa suoraan <strong>"Enter"</strong> – järjestelmä laskee keston ja luo aikahypyn automaattisesti.
             </span>
           </div>
         </div>

@@ -63,6 +63,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
   const [autoSolveMode, setAutoSolveMode] = useState<'balanced' | 'packed'>('balanced');
   const [autoSolveAllowGaps, setAutoSolveAllowGaps] = useState(false);
   const [autoSolveFallbackToFill, setAutoSolveFallbackToFill] = useState(true);
+  const [autoSolveResetAll, setAutoSolveResetAll] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -85,6 +86,72 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
   const activeStudent = submissions.find(s => s.id === hoveredStudentId);
   const activeStudentWishedSlots = activeStudent ? activeStudent.selectedSlotIds : [];
   const activeStudentAssignedSlotId = hoveredStudentId ? assignedStudentMap.get(hoveredStudentId) : null;
+
+  // Smart suggestions for unassigned students (direct free slot or 1-step swap)
+  interface SmartSuggestion {
+    type: 'free_slot' | 'relocation' | 'no_direct';
+    student: StudentSubmission;
+    freeSlot?: TimeSlot;
+    displacedStudent?: StudentSubmission;
+    occupiedSlot?: TimeSlot;
+    altSlot?: TimeSlot;
+  }
+
+  const smartSuggestions: SmartSuggestion[] = React.useMemo(() => {
+    const result: SmartSuggestion[] = [];
+    if (unassignedSubmissions.length === 0) return result;
+
+    for (const student of unassignedSubmissions) {
+      // 1. Check if student has a direct free slot among their desires
+      const directFreeSlots = event.slots.filter(
+        s => student.selectedSlotIds.includes(s.id) && !s.assignedStudentId
+      );
+
+      if (directFreeSlots.length > 0) {
+        result.push({
+          type: 'free_slot',
+          student,
+          freeSlot: directFreeSlots[0],
+        });
+        continue;
+      }
+
+      // 2. 1-step relocation: can someone on a desired slot move to another free slot they wished for?
+      let foundRelocation = false;
+      for (const slotId of student.selectedSlotIds) {
+        const occupiedSlot = event.slots.find(s => s.id === slotId);
+        if (!occupiedSlot || !occupiedSlot.assignedStudentId) continue;
+
+        const occupant = submissions.find(s => s.id === occupiedSlot.assignedStudentId);
+        if (!occupant) continue;
+
+        const altFreeSlot = event.slots.find(
+          s => s.id !== occupiedSlot.id && !s.assignedStudentId && occupant.selectedSlotIds.includes(s.id)
+        );
+
+        if (altFreeSlot) {
+          result.push({
+            type: 'relocation',
+            student,
+            displacedStudent: occupant,
+            occupiedSlot,
+            altSlot: altFreeSlot,
+          });
+          foundRelocation = true;
+          break;
+        }
+      }
+
+      if (!foundRelocation) {
+        result.push({
+          type: 'no_direct',
+          student,
+        });
+      }
+    }
+
+    return result;
+  }, [unassignedSubmissions, event.slots, submissions]);
 
   const handleSelectStudent = (slotId: string, studentId: string | null) => {
     const targetSlot = event.slots.find(s => s.id === slotId);
@@ -135,17 +202,71 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
     showToast(`Vaihdettiin päittäin: ${studentA?.firstName} ⇄ ${studentB?.firstName}`);
   };
 
+  // Handle direct assignment of unassigned student to a free wished slot
+  const handleAssignFreeSlot = (studentId: string, slotId: string) => {
+    const updated = assignStudentToSlot(slotId, studentId);
+    onEventUpdated(updated);
+    const student = submissions.find(s => s.id === studentId);
+    confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+    showToast(`✨ ${student?.firstName || 'Oppilas'} sijoitettu vapaaseen aikaan!`);
+  };
+
+  // Handle smart relocation: move occupant to an alternative free slot, and assign target slot to new student
+  const handleApplyRelocation = (
+    newStudentId: string,
+    targetSlotId: string,
+    occupantId: string,
+    altSlotId: string
+  ) => {
+    const newSlots = event.slots.map(s => {
+      if (s.id === targetSlotId) {
+        return { ...s, assignedStudentId: newStudentId };
+      }
+      if (s.id === altSlotId) {
+        return { ...s, assignedStudentId: occupantId };
+      }
+      return s;
+    });
+
+    const updated = { ...event, slots: newSlots };
+    saveEvent(updated);
+    onEventUpdated(updated);
+
+    const newStudent = submissions.find(s => s.id === newStudentId);
+    const occupant = submissions.find(s => s.id === occupantId);
+    confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
+    showToast(`✨ Siirto tehty! ${occupant?.firstName} siirrettiin toiseen toiveeseensa ja ${newStudent?.firstName} sai ajan!`);
+  };
+
+  // Re-run solver for all students from clean slate
+  const handleReSolveAll = () => {
+    if (
+      window.confirm(
+        'Haluatko suorittaa automaattisovituksen uudelleen kaikille oppilaille? Järjestelmä jakaa kaikki toiveet (myös uudet vastaukset) parhaisiin aikoihin puhtaalta pöydältä.'
+      )
+    ) {
+      executeAutoSolve('balanced', false, true, true);
+    }
+  };
+
   // Magic Auto-Solver with balanced distribution support
   const handleAutoSolve = () => {
+    if (unassignedSubmissions.length > 0 && assignedCount > 0) {
+      setAutoSolveResetAll(true);
+    }
     setShowAutoSolveModal(true);
   };
 
   const executeAutoSolve = (
     mode: 'balanced' | 'packed',
     allowGaps: boolean,
-    _fallbackToFill: boolean
+    _fallbackToFill: boolean,
+    resetAllFirst: boolean = false
   ) => {
-    const newSlots = [...event.slots];
+    const newSlots = event.slots.map(s => ({
+      ...s,
+      assignedStudentId: resetAllFirst ? null : s.assignedStudentId,
+    }));
     const currentlyAssigned = new Set<string>();
 
     newSlots.forEach(s => {
@@ -683,7 +804,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
         </div>
 
         <div className="card" style={{ padding: '1.25rem', marginBottom: 0, borderRadius: 'var(--radius-lg)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <div style={{
                 background: unassignedSubmissions.length > 0 ? 'var(--warning-light)' : 'var(--success-light)',
@@ -701,20 +822,237 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
               </div>
             </div>
 
-            {assignedCount > 0 && (
-              <button
-                className="select-all-btn"
-                style={{ color: 'var(--danger)', borderColor: 'rgba(255, 59, 48, 0.3)' }}
-                onClick={handleClearAll}
-                title="Tyhjennä kaikki valinnat"
-              >
-                <RotateCcw size={12} />
-                <span>Nollaa</span>
-              </button>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+              {unassignedSubmissions.length > 0 && assignedCount > 0 && (
+                <button
+                  type="button"
+                  className="select-all-btn"
+                  style={{
+                    background: '#ede9fe',
+                    color: '#6d28d9',
+                    borderColor: '#c4b5fd',
+                    fontWeight: 700,
+                  }}
+                  onClick={handleReSolveAll}
+                  title="Sovita uudet ja vanhat automaattisesti"
+                >
+                  <Sparkles size={12} />
+                  <span>Sovita</span>
+                </button>
+              )}
+              {assignedCount > 0 && (
+                <button
+                  className="select-all-btn"
+                  style={{ color: 'var(--danger)', borderColor: 'rgba(255, 59, 48, 0.3)' }}
+                  onClick={handleClearAll}
+                  title="Tyhjennä kaikki valinnat"
+                >
+                  <RotateCcw size={12} />
+                  <span>Nollaa</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Smart Unassigned Assistant Banner */}
+      {unassignedSubmissions.length > 0 && (
+        <div
+          className="card"
+          style={{
+            background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+            border: '2px solid #fde68a',
+            borderRadius: 'var(--radius-lg)',
+            padding: '1.25rem 1.5rem',
+            marginBottom: '1.5rem',
+            boxShadow: 'var(--shadow-sm)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ background: '#f59e0b', color: '#ffffff', padding: '0.6rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Sparkles size={22} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#92400e', margin: 0 }}>
+                  {unassignedSubmissions.length === 1 ? '1 oppilas odottaa vielä aikaa (Uusi vastaus)' : `${unassignedSubmissions.length} oppilasta odottaa vielä aikaa`}
+                </h3>
+                <p style={{ fontSize: '0.86rem', color: '#78350f', margin: '0.15rem 0 0 0' }}>
+                  Voit sijoittaa heidät alla olevilla suorilla ehdotuksilla tai sovittaa koko luokan uudelleen yhdellä klikkauksella.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="btn-primary"
+              style={{
+                background: '#7c3aed',
+                fontSize: '0.86rem',
+                padding: '0.6rem 1.15rem',
+                borderRadius: 'var(--radius-full)',
+                boxShadow: '0 2px 8px rgba(124, 58, 237, 0.25)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+              onClick={handleReSolveAll}
+              title="Sovita koko luokka uudelleen puhtaalta pöydältä siten, että uudetkin vastaukset sijoittuvat parhaalla mahdollisella tavalla"
+            >
+              <RotateCcw size={15} />
+              <span>Sovita kaikki uudelleen automaatilla</span>
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {smartSuggestions.map(sug => {
+              const displayName = getStudentDisplayName(sug.student, submissions);
+
+              if (sug.type === 'free_slot' && sug.freeSlot) {
+                const slot = sug.freeSlot;
+                return (
+                  <div
+                    key={sug.student.id}
+                    style={{
+                      background: '#ffffff',
+                      border: '1.5px solid #86efac',
+                      borderRadius: '12px',
+                      padding: '0.9rem 1.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '0.75rem',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>{displayName}</span>
+                        <span style={{ background: '#dcfce7', color: '#15803d', fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>
+                          Vapaa aika löytyy!
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.84rem', color: '#475569', margin: '0.2rem 0 0 0' }}>
+                        Oppilaan toiveista on suoraan vapaana: <strong>{slot.dateLabel || slot.date} klo {slot.startTime}–{slot.endTime}</strong>
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      style={{
+                        background: '#16a34a',
+                        fontSize: '0.84rem',
+                        padding: '0.55rem 1.1rem',
+                        borderRadius: 'var(--radius-full)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                      onClick={() => handleAssignFreeSlot(sug.student.id, slot.id)}
+                    >
+                      <Check size={15} />
+                      <span>Sijoita vapaaseen aikaan</span>
+                    </button>
+                  </div>
+                );
+              }
+
+              if (sug.type === 'relocation' && sug.displacedStudent && sug.occupiedSlot && sug.altSlot) {
+                const occName = getStudentDisplayName(sug.displacedStudent, submissions);
+                const occSlot = sug.occupiedSlot;
+                const altSlot = sug.altSlot;
+
+                return (
+                  <div
+                    key={sug.student.id}
+                    style={{
+                      background: '#ffffff',
+                      border: '1.5px solid #bfdbfe',
+                      borderRadius: '12px',
+                      padding: '0.9rem 1.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '0.75rem',
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: '260px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                        <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>{displayName}</span>
+                        <span style={{ background: '#e0e7ff', color: '#4338ca', fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: '6px' }}>
+                          💡 Älykäs siirtoehdotus
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.84rem', color: '#334155', margin: 0, lineHeight: 1.45 }}>
+                        Oppilas <strong>{occName}</strong> on ajalla <em>{occSlot.dateLabel || occSlot.date} klo {occSlot.startTime}</em> (jota {sug.student.firstName} toivoi).
+                        Mutta {sug.displacedStudent.firstName}lle sopii myös vapaana oleva toiveensa <strong>{altSlot.dateLabel || altSlot.date} klo {altSlot.startTime}</strong>!
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      style={{
+                        background: '#2563eb',
+                        fontSize: '0.84rem',
+                        padding: '0.55rem 1.15rem',
+                        borderRadius: 'var(--radius-full)',
+                        whiteSpace: 'nowrap',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                      onClick={() => handleApplyRelocation(sug.student.id, occSlot.id, sug.displacedStudent!.id, altSlot.id)}
+                    >
+                      <ArrowLeftRight size={15} />
+                      <span>Siirrä {sug.displacedStudent.firstName} & anna aika {sug.student.firstName}lle</span>
+                    </button>
+                  </div>
+                );
+              }
+
+              // No direct simple swap found
+              return (
+                <div
+                  key={sug.student.id}
+                  style={{
+                    background: '#ffffff',
+                    border: '1.5px solid #fde68a',
+                    borderRadius: '12px',
+                    padding: '0.9rem 1.25rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem',
+                  }}
+                >
+                  <div>
+                    <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>{displayName}</span>
+                    <p style={{ fontSize: '0.83rem', color: '#78350f', margin: '0.2rem 0 0 0' }}>
+                      Kaikki {sug.student.firstName}n toiveet ovat varattuja eikä yksinkertaista suoraa siirtoa löytynyt.
+                      Suorita automaattisovitus uudelleen puhtaalta pöydältä, jolloin kone etsii uuden optimin kaikille oppilaille.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ fontSize: '0.82rem', padding: '0.45rem 0.85rem' }}
+                    onClick={handleReSolveAll}
+                  >
+                    <RotateCcw size={14} />
+                    <span>Sovita uudelleen</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Main Matching Table Card */}
       <div className="card">
@@ -1365,6 +1703,28 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                   </div>
                 </label>
               )}
+
+              {/* Reset all and solve from clean slate */}
+              {assignedCount > 0 && (
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', cursor: 'pointer', paddingTop: '0.5rem', borderTop: '1px dashed #cbd5e1' }}>
+                  <input
+                    type="checkbox"
+                    checked={autoSolveResetAll}
+                    onChange={e => setAutoSolveResetAll(e.target.checked)}
+                    style={{ marginTop: '2px' }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <strong style={{ fontSize: '0.88rem', color: '#0f172a' }}>
+                      Sovita kaikki oppilaat uudelleen puhtaalta pöydältä
+                    </strong>
+                    <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.15rem 0 0 0', lineHeight: 1.4 }}>
+                      {autoSolveResetAll
+                        ? 'Kaikkien oppilaiden toiveet jaetaan uudelleen parhaalla mahdollisella tavalla (suositus uuden vastauksen saapuessa).'
+                        : 'Säilyttää nykyiset valinnat ja yrittää sovittaa vain ilman aikaa olevat jäljellä oleviin vapaisiin aikoihin.'}
+                    </p>
+                  </div>
+                </label>
+              )}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
@@ -1379,7 +1739,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                 type="button"
                 className="btn-primary"
                 style={{ background: '#7c3aed', border: 'none' }}
-                onClick={() => executeAutoSolve(autoSolveMode, autoSolveAllowGaps, autoSolveFallbackToFill)}
+                onClick={() => executeAutoSolve(autoSolveMode, autoSolveAllowGaps, autoSolveFallbackToFill, autoSolveResetAll)}
               >
                 <Wand2 size={16} />
                 <span>Suorita automaattisovitus</span>

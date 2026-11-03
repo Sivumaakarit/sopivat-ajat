@@ -42,8 +42,8 @@ export function App() {
       const e = getEvent();
       return e.isPublished ? 'public' : 'parent';
     }
-    const e = getEvent();
-    return e.slots.length > 0 ? 'matching' : 'creator';
+    // Opettajanäkymässä avataan aina suoraan "Aikojen hallinta" (creator) ensimmäisenä
+    return 'creator';
   });
 
   // Fetch shared event from Supabase if opening a shared link

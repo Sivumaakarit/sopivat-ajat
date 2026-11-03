@@ -19,7 +19,6 @@ import {
   Settings,
   Sparkles,
   Copy,
-  Zap,
   ArrowRight,
   CheckCircle2,
   Lock,
@@ -684,7 +683,7 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
                 transition: 'all 0.18s var(--apple-spring)'
               }}
             >
-              <Zap size={14} color="#34c759" />
+              <Plus size={14} color="#15803d" />
               <span>+ Seuraava arkipäivä: <strong>{nextBusinessDay.dateLabel}</strong></span>
             </button>
 
@@ -781,7 +780,7 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
                   borderRadius: '10px',
                 }}
               >
-                <Zap size={18} color="#16a34a" />
+                <Plus size={18} color="#16a34a" />
                 <span>+ Aloita seuraavasta arkipäivästä: <strong>{nextBusinessDay.dateLabel}</strong></span>
               </button>
 
@@ -912,12 +911,12 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
 
         {/* Smart Adder Box */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.9)',
-          border: '1px solid rgba(0, 0, 0, 0.08)',
+          background: '#f8faff',
+          border: '1px solid #dbeafe',
           borderRadius: 'var(--radius-lg)',
-          padding: '1.35rem',
-          marginBottom: '1.5rem',
-          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.02)',
+          padding: '1.4rem',
+          marginBottom: '2rem',
+          boxShadow: '0 2px 12px rgba(0, 113, 227, 0.04)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -1084,8 +1083,10 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
                       justifyContent: 'space-between',
                       background: '#ffffff',
                       border: '1px solid #e2e8f0',
-                      padding: '0.6rem 0.9rem',
+                      borderLeft: '4px solid #0071e3',
+                      padding: '0.65rem 0.95rem',
                       borderRadius: '8px',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1e293b' }}>

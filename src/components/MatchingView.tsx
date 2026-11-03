@@ -1674,7 +1674,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                 />
                 <div style={{ flex: 1 }}>
                   <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>
-                    ⚡ Täytä päivät täyteen (Tiivis)
+                    Täytä päivät täyteen (Tiivis)
                   </strong>
                   <p style={{ fontSize: '0.83rem', color: '#64748b', margin: '0.25rem 0 0 0', lineHeight: 1.45 }}>
                     Täyttää kaikki päivät ja mahdolliset vapaat ajat maksimikapasiteetilla heti peräkkäin.

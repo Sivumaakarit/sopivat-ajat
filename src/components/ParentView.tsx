@@ -438,7 +438,7 @@ export const ParentView: React.FC<ParentViewProps> = ({
             <img src={normalizeImageUrl(event.imageUrl)} alt="Sopivat ajat" />
           </div>
           <div style={{ flex: 1 }}>
-            <h1 className="paper-title">{event.title}</h1>
+            <h1 className="paper-title" style={{ marginBottom: '1.25rem' }}>{event.title}</h1>
             <div className="paper-instructions">{normalizeInstructions(event.instructions)}</div>
             {event.deadlineDate && (
               <div
@@ -592,7 +592,7 @@ export const ParentView: React.FC<ParentViewProps> = ({
                       onClick={() => selectAllInDay(daySlotIds)}
                       title="Valitse tai poista kaikki tämän päivän ajat"
                     >
-                      {allSelected ? 'Tyhjennä' : '⚡ Kaikki'}
+                      {allSelected ? 'Tyhjennä' : 'Kaikki'}
                     </button>
                   </div>
 

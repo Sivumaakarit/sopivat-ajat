@@ -967,6 +967,88 @@ button:active:not(:disabled),
   margin-bottom: 1.25rem;
 }
 
+/* Toast Notification (Floating pill notification, Apple Dynamic Island inspired) */
+.toast-notice {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.94);
+  color: #ffffff;
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  padding: 0.75rem 1.4rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.14);
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  z-index: 99999;
+  pointer-events: none;
+  animation: toastSlideDown 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  max-width: 90vw;
+  text-align: center;
+}
+
+@keyframes toastSlideDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+/* Break popup bubble above the buffer button */
+.break-popup-bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: rgba(15, 23, 42, 0.94);
+  color: #ffffff;
+  padding: 0.45rem 0.85rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  animation: bubblePop 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: none;
+}
+
+.break-popup-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 28px;
+  border-width: 6px;
+  border-style: solid;
+  border-color: rgba(15, 23, 42, 0.94) transparent transparent transparent;
+}
+
+@keyframes bubblePop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* Apple Reduced Motion & Transparency (Rule #14) */
 @media (prefers-reduced-motion: reduce) {
 

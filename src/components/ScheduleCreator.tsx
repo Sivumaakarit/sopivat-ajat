@@ -128,6 +128,19 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
   // Input for the next slot (user can freely type 17:00 or any time)
   const [startTimeInput, setStartTimeInput] = useState('13:15');
 
+  // Break notifications state (popup toast + inline bubble)
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [breakBubble, setBreakBubble] = useState<string | null>(null);
+  const toastTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bubbleTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      if (bubbleTimeoutRef.current) clearTimeout(bubbleTimeoutRef.current);
+    };
+  }, []);
+
   // Find slots of active day, always sorted chronologically
   const currentDaySlots = sortSlotsChronologically(
     event.slots.filter(
@@ -159,6 +172,20 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
   const handleAddBuffer = (bufferMinutes: number) => {
     const newStart = addMinutesToTime(startTimeInput, bufferMinutes);
     setStartTimeInput(newStart);
+
+    const noticeText = `Tauko huomioitu seuraavassa aloitusajassa (uusi aloitusaika klo ${newStart})`;
+
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setToastMessage(`☕ +${bufferMinutes} min ${noticeText}`);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+    }, 3200);
+
+    if (bubbleTimeoutRef.current) clearTimeout(bubbleTimeoutRef.current);
+    setBreakBubble(`+${bufferMinutes} min tauko huomioitu seuraavassa aloitusajassa (klo ${newStart})`);
+    bubbleTimeoutRef.current = setTimeout(() => {
+      setBreakBubble(null);
+    }, 3500);
   };
 
   // Delete a single slot
@@ -285,6 +312,14 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
 
   return (
     <div className="main-layout">
+      {/* Toast Notification for quick actions like break buffer */}
+      {toastMessage && (
+        <div className="toast-notice">
+          <Coffee size={18} style={{ color: '#38bdf8' }} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       {/* Top Banner & Quick Preview Action */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
@@ -929,24 +964,33 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
                 </div>
               )}
 
-              <button
-                type="button"
-                className="select-all-btn"
-                onClick={() => handleAddBuffer(5)}
-                title="Siirrä seuraavaa aloitusaikaa +5 minuuttia eteenpäin"
-              >
-                <Coffee size={12} />
-                <span>+5 min tauko</span>
-              </button>
-              <button
-                type="button"
-                className="select-all-btn"
-                onClick={() => handleAddBuffer(10)}
-                title="Siirrä seuraavaa aloitusaikaa +10 minuuttia eteenpäin"
-              >
-                <Coffee size={12} />
-                <span>+10 min tauko</span>
-              </button>
+              <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                <button
+                  type="button"
+                  className="select-all-btn"
+                  onClick={() => handleAddBuffer(5)}
+                  title="Siirrä seuraavaa aloitusaikaa +5 minuuttia eteenpäin"
+                >
+                  <Coffee size={12} />
+                  <span>+5 min tauko</span>
+                </button>
+                <button
+                  type="button"
+                  className="select-all-btn"
+                  onClick={() => handleAddBuffer(10)}
+                  title="Siirrä seuraavaa aloitusaikaa +10 minuuttia eteenpäin"
+                >
+                  <Coffee size={12} />
+                  <span>+10 min tauko</span>
+                </button>
+
+                {breakBubble && (
+                  <div className="break-popup-bubble">
+                    <Coffee size={13} style={{ color: '#38bdf8', flexShrink: 0 }} />
+                    <span>{breakBubble}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

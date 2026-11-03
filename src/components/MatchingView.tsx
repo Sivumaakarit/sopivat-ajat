@@ -1504,15 +1504,27 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                   onChange={e => setManualFirst(e.target.value)}
                 />
               </div>
-              <div className="name-input-initial form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Sukunimen 1. kirjain *</label>
+              <div className="name-input-initial form-group" style={{ marginBottom: 0, flex: '0 0 auto', width: 'auto' }}>
+                <label className="form-label" style={{ whiteSpace: 'nowrap' }}>Sukunimen 1. kirjain *</label>
                 <input
                   type="text"
                   className="form-input"
                   placeholder="M"
-                  maxLength={1}
+                  maxLength={2}
                   value={manualInitial}
-                  onChange={e => setManualInitial(e.target.value.toUpperCase())}
+                  onChange={e => setManualInitial(e.target.value.toUpperCase().slice(0, 2))}
+                  style={{
+                    width: '68px',
+                    maxWidth: '68px',
+                    height: '44px',
+                    textAlign: 'center',
+                    fontSize: '1.2rem',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    padding: '0',
+                    borderRadius: '10px',
+                  }}
                 />
               </div>
             </div>

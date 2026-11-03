@@ -496,8 +496,8 @@ export const ParentView: React.FC<ParentViewProps> = ({
               />
             </div>
 
-            <div className="name-input-initial form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" htmlFor="lastNameInitial">
+            <div className="name-input-initial form-group" style={{ marginBottom: 0, flex: '0 0 auto', width: 'auto' }}>
+              <label className="form-label" htmlFor="lastNameInitial" style={{ whiteSpace: 'nowrap' }}>
                 Sukunimen 1. kirjain *
               </label>
               <input
@@ -505,9 +505,22 @@ export const ParentView: React.FC<ParentViewProps> = ({
                 type="text"
                 className="form-input"
                 placeholder="M"
-                maxLength={1}
+                maxLength={2}
                 value={lastNameInitial}
-                onChange={e => setLastNameInitial(e.target.value.toUpperCase())}
+                onChange={e => setLastNameInitial(e.target.value.toUpperCase().slice(0, 2))}
+                style={{
+                  width: '68px',
+                  maxWidth: '68px',
+                  height: '44px',
+                  textAlign: 'center',
+                  fontSize: '1.2rem',
+                  fontWeight: 800,
+                  color: 'var(--primary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  padding: '0',
+                  borderRadius: '10px',
+                }}
                 autoComplete="off"
                 required
               />

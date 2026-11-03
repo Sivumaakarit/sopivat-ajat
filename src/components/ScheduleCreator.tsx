@@ -733,6 +733,34 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
           </div>
         </div>
 
+        {/* Opettajan nyrkkisääntö -vinkkikortti */}
+        <div style={{
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          borderRadius: '12px',
+          padding: '0.85rem 1.1rem',
+          marginBottom: '1.25rem',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '0.75rem',
+          fontSize: '0.88rem',
+          lineHeight: 1.5,
+          color: '#334155'
+        }}>
+          <span style={{ fontSize: '1.15rem', flexShrink: 0, marginTop: '1px' }}>💡</span>
+          <div>
+            <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '0.15rem' }}>
+              Käytännön nyrkkisääntö: Luo n. 1,3–1,5-kertainen määrä aikoja oppilasmäärään nähden.
+            </div>
+            <div style={{ color: '#475569', fontSize: '0.83rem', marginTop: '0.2rem' }}>
+              <strong>Esimerkki:</strong> 20 oppilasta → luo 26–28 aikaa.
+            </div>
+            <div style={{ color: '#64748b', fontSize: '0.82rem', marginTop: '0.15rem' }}>
+              <em>Miksi?</em> Silloin vanhemmilla on aitoa valinnanvaraa, mutta sinulle ei jää valtavia tyhjiä reikiä keskelle päiviä.
+            </div>
+          </div>
+        </div>
+
         {/* Zero-state onboarding card when no days are defined yet */}
         {!selectedDateLabel && distinctDayLabels.length === 0 ? (
           <div style={{

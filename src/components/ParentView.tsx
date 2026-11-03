@@ -56,6 +56,9 @@ export const ParentView: React.FC<ParentViewProps> = ({
   const groupedDays = groupSlotsByDate(event.slots);
   const minRequired = event.minSelectionsRequired || 3;
   const isMinMet = selectedSlotIds.length >= minRequired;
+  const selectedDaysCount = new Set(
+    event.slots.filter(s => selectedSlotIds.includes(s.id)).map(s => s.dateLabel || s.date)
+  ).size;
   const isNameValid = firstName.trim().length > 0 && lastNameInitial.trim().length > 0;
   const canSubmit = isMinMet && isNameValid;
 
@@ -556,13 +559,30 @@ export const ParentView: React.FC<ParentViewProps> = ({
 
         {/* Schedule Grid */}
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.4rem' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>
               Valitse sopivat ajat
             </h3>
             <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
               Rastita yhteensä vähintään {minRequired} vaihtoehtoa
             </span>
+          </div>
+
+          {/* Friendly Tip: Multiple days */}
+          <div style={{
+            background: '#f0fdf4',
+            border: '1px solid #bbf7d0',
+            borderRadius: '10px',
+            padding: '0.55rem 0.85rem',
+            marginBottom: '1rem',
+            fontSize: '0.86rem',
+            color: '#15803d',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}>
+            <span>💡</span>
+            <span><strong>Vinkki:</strong> Valitse aikoja mielellään vähintään kahdelta eri päivältä – näin varmistat perheellenne sopivan ajan!</span>
           </div>
 
           {groupedDays.length === 0 ? (
@@ -647,6 +667,11 @@ export const ParentView: React.FC<ParentViewProps> = ({
                 : `Valitse vielä ${minRequired - selectedSlotIds.length} aikaa`}
             </span>
           </div>
+          {isMinMet && selectedDaysCount === 1 && groupedDays.length > 1 && (
+            <span style={{ fontSize: '0.78rem', color: '#64748b', display: 'block', marginTop: '3px' }}>
+              💡 Valinnat vain yhdeltä päivältä. Voit halutessasi valita aikoja myös toiselta päivältä.
+            </span>
+          )}
           {!isNameValid && (
             <span style={{ fontSize: '0.8rem', color: '#ef4444', display: 'block', marginTop: '2px' }}>
               Täytäthän oppilaan etunimen ja sukunimen ensimmäisen kirjaimen yllä.

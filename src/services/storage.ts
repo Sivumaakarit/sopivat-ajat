@@ -21,7 +21,7 @@ export const INITIAL_EVENT: ScheduleEvent = {
   adminToken: 'opettaja-sala-avain',
   title: 'Arviointikeskustelujen varaukset 5A',
   instructions:
-    'Heippa!\n\nOn aika aloittaa lukuvuoden arviointikeskustelut. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t). Tapaamiset järjestetään luokassamme.\n\nAlla on listattuna mahdollisia aikoja. Rastittakaa KAIKKI ne vaihtoehdot, jotka ovat teille sopivia. Vähintään kuitenkin 3 aikaa. Mikäli mikään näistä ajoista ei sovi, olkaa yhteydessä opettajaan Wilmassa, niin sovitaan toinen aika.\n\nVahvistan teille varatun ajan Wilma-viestillä.\n\nYstävällisin terveisin opettaja',
+    'Heippa!\n\nOn aika aloittaa lukuvuoden arviointikeskustelut. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t). Tapaamiset järjestetään luokassamme.\n\nAlla on listattuna mahdollisia aikoja. Rastittakaa KAIKKI ne vaihtoehdot, jotka ovat teille sopivia. Vähintään kuitenkin 3 aikaa. Mikäli mikään näistä ajoista ei sovi, olkaa yhteydessä opettajaan Wilmassa, niin sovitaan toinen aika.\n\n💡 Vinkki: Valitse aikoja mielellään vähintään kahdelta eri päivältä – näin varmistat perheellenne sopivan ajan!\n\nVahvistan teille varatun ajan Wilma-viestillä.\n\nYstävällisin terveisin opettaja',
   imageUrl: SOPIVAT_AJAT_LOGO,
   slotDurationMinutes: 20,
   minSelectionsRequired: 3,
@@ -53,6 +53,14 @@ export function normalizeInstructions(instructions: string): string {
     text = text.replace(
       'Vähintään kuitenkin 3 aikaa.',
       'Vähintään kuitenkin 3 aikaa. Mikäli mikään näistä ajoista ei sovi, olkaa yhteydessä opettajaan Wilmassa, niin sovitaan toinen aika.'
+    );
+  }
+
+  // Ensure two-day friendly tip is included in instructions
+  if (!text.includes('vähintään kahdelta eri päivältä') && text.includes('Wilmassa, niin sovitaan toinen aika.')) {
+    text = text.replace(
+      'Wilmassa, niin sovitaan toinen aika.',
+      'Wilmassa, niin sovitaan toinen aika.\n\n💡 Vinkki: Valitse aikoja mielellään vähintään kahdelta eri päivältä – näin varmistat perheellenne sopivan ajan!'
     );
   }
   return text;

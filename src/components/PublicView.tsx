@@ -36,10 +36,6 @@ export const PublicView: React.FC<PublicViewProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedWilma, setCopiedWilma] = useState(false);
 
-  const teacherTarget = event.teacherName
-    ? (event.teacherName.toLowerCase().endsWith('lle') ? event.teacherName : `${event.teacherName}lle`)
-    : 'Eskolle';
-
   const shareUrl = `${window.location.origin}${window.location.pathname}?e=${encodeURIComponent(event.id)}`;
 
   const handleCopyLink = () => {
@@ -49,7 +45,7 @@ export const PublicView: React.FC<PublicViewProps> = ({
   };
 
   const handleCopyWilma = () => {
-    const wilmaMsg = `Hei huoltajat!\n\nLuokan arviointikeskustelujen aikataulu on nyt valmis ja vahvistettu!\n\nNäette oman perheenne vahvistetun ajan alla olevasta linkistä:\n${shareUrl}\n\nAikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, tai tulee muita muutostarpeita laittakaa siitä lyhyt viesti ${teacherTarget} Wilmassa 😊.\n\nTervetuloa tapaamiseen omassa luokassamme sovittuna aikana!\n\nYstävällisin terveisin,\n${event.teacherName || 'Esko'}`;
+    const wilmaMsg = `Hei huoltajat!\n\nLuokan arviointikeskustelujen aikataulu on nyt valmis ja vahvistettu!\n\nNäette oman perheenne vahvistetun ajan alla olevasta linkistä:\n${shareUrl}\n\nAikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, tai tulee muita muutostarpeita, laittakaa siitä lyhyt viesti opettajalle Wilmassa.\n\nTervetuloa tapaamiseen omassa luokassamme sovittuna aikana!\n\nYstävällisin terveisin,\n${event.teacherName?.trim() || 'Opettaja'}`;
 
     navigator.clipboard.writeText(wilmaMsg);
     setCopiedWilma(true);
@@ -280,7 +276,7 @@ export const PublicView: React.FC<PublicViewProps> = ({
               {event.title}
             </h1>
             <p style={{ color: '#475569', fontSize: '0.98rem', marginTop: '0.35rem', lineHeight: 1.5 }}>
-              Opettaja {event.teacherName || 'Esko'} on vahvistanut luokan arviointikeskusteluajat.
+              {event.teacherName?.trim() ? `${event.teacherName.trim()}-opettaja` : 'Opettaja'} on vahvistanut luokan arviointikeskusteluajat.
               Tervetuloa tapaamiseen omassa luokassamme sovittuna aikana!
             </p>
           </div>
@@ -456,7 +452,7 @@ export const PublicView: React.FC<PublicViewProps> = ({
               Tuli esteitä tai toive vaihtaa päittäin?
             </h3>
             <p style={{ color: '#475569', fontSize: '0.92rem', lineHeight: 1.6, margin: 0 }}>
-              Aikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, tai tulee muita muutostarpeita laittakaa siitä lyhyt viesti <strong>{teacherTarget}</strong> Wilmassa 😊.
+              Aikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, tai tulee muita muutostarpeita, laittakaa siitä lyhyt viesti opettajalle Wilmassa.
             </p>
           </div>
         </div>

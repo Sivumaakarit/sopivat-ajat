@@ -575,13 +575,10 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
   // Copy Wilma template
   const copyWilmaMessage = () => {
     const shareUrl = `${window.location.origin}${window.location.pathname}?e=${encodeURIComponent(event.id)}`;
-    const teacherTarget = event.teacherName
-      ? (event.teacherName.toLowerCase().endsWith('lle') ? event.teacherName : `${event.teacherName}lle`)
-      : 'Eskolle';
 
     let text = '';
     if (event.isPublished) {
-      text = `Hei huoltajat!\n\nLuokan arviointikeskustelujen aikataulu on nyt valmis ja vahvistettu!\n\nNäette oman perheenne vahvistetun ajan alla olevasta linkistä:\n${shareUrl}\n\nAikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, tai tulee muita muutostarpeita laittakaa siitä lyhyt viesti ${teacherTarget} Wilmassa 😊.\n\nTervetuloa tapaamiseen omassa luokassamme sovittuna aikana!\n\nYstävällisin terveisin,\n${event.teacherName || 'Esko'}`;
+      text = `Hei huoltajat!\n\nLuokan arviointikeskustelujen aikataulu on nyt valmis ja vahvistettu!\n\nNäette oman perheenne vahvistetun ajan alla olevasta linkistä:\n${shareUrl}\n\nAikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, tai tulee muita muutostarpeita, laittakaa siitä lyhyt viesti opettajalle Wilmassa.\n\nTervetuloa tapaamiseen omassa luokassamme sovittuna aikana!\n\nYstävällisin terveisin,\n${event.teacherName?.trim() || 'Opettaja'}`;
     } else {
       const deadlineNote = event.deadlineDate ? `\n\nVastausaika päättyy: ${event.deadlineDate}.` : '';
       text = `Hei huoltajat!\n\nOn aika valita sopivat ajat lukuvuoden arviointikeskusteluille. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t).\n\nKäykää valitsemassa teille sopivat ajat alla olevasta linkistä:\n${shareUrl}\n\nValitkaa yhteensä vähintään ${event.minSelectionsRequired || 3} teille sopivaa vaihtoehtoa.${deadlineNote}\n\nYstävällisin terveisin,\n${event.teacherName || 'Esko'}`;

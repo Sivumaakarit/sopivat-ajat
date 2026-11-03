@@ -156,7 +156,7 @@ export const ParentView: React.FC<ParentViewProps> = ({
           </h2>
 
           <p style={{ color: '#475569', fontSize: '1.05rem', lineHeight: 1.6, maxWidth: '500px', margin: '0 auto 1.5rem auto' }}>
-            Opettaja {event.teacherName || 'Esko'} sovittaa parhaillaan luokan toiveita yhteen palapelissä. Vahvistettu aikataulu julkaistaan pian tähän samaan osoitteeseen.
+            {event.teacherName?.trim() ? `${event.teacherName.trim()}-opettaja` : 'Opettaja'} sovittaa parhaillaan luokan toiveita yhteen palapelissä. Vahvistettu aikataulu julkaistaan pian tähän samaan osoitteeseen.
           </p>
 
           <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '2rem' }}>

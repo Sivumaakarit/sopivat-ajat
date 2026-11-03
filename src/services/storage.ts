@@ -21,7 +21,7 @@ export const INITIAL_EVENT: ScheduleEvent = {
   adminToken: 'opettaja-sala-avain',
   title: 'Arviointikeskustelujen varaukset 5A',
   instructions:
-    'Heippa!\n\nOn aika aloittaa lukuvuoden arviointikeskustelut. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t). Tapaamiset järjestetään luokassamme.\n\nAlla on listattuna mahdollisia aikoja. Rastittakaa KAIKKI ne vaihtoehdot, jotka ovat teille sopivia. Vähintään kuitenkin 3 aikaa.\n\nVahvistan teille varatun ajan Wilma-viestillä.\n\nYstävällisin terveisin opettaja',
+    'Heippa!\n\nOn aika aloittaa lukuvuoden arviointikeskustelut. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t). Tapaamiset järjestetään luokassamme.\n\nAlla on listattuna mahdollisia aikoja. Rastittakaa KAIKKI ne vaihtoehdot, jotka ovat teille sopivia. Vähintään kuitenkin 3 aikaa. Mikäli mikään näistä ajoista ei sovi, olkaa yhteydessä opettajaan Wilmassa, niin sovitaan toinen aika.\n\nVahvistan teille varatun ajan Wilma-viestillä.\n\nYstävällisin terveisin opettaja',
   imageUrl: SOPIVAT_AJAT_LOGO,
   slotDurationMinutes: 20,
   minSelectionsRequired: 3,
@@ -47,6 +47,14 @@ export function normalizeInstructions(instructions: string): string {
     'Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t).'
   );
   text = text.replace('kodin edustaja.', 'kodin edustaja(t).');
+
+  // Ensure Wilma contact fallback is included
+  if (text.includes('Vähintään kuitenkin 3 aikaa.') && !text.includes('Wilmassa, niin')) {
+    text = text.replace(
+      'Vähintään kuitenkin 3 aikaa.',
+      'Vähintään kuitenkin 3 aikaa. Mikäli mikään näistä ajoista ei sovi, olkaa yhteydessä opettajaan Wilmassa, niin sovitaan toinen aika.'
+    );
+  }
   return text;
 }
 

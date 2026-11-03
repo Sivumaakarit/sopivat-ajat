@@ -918,6 +918,17 @@ button:active:not(:disabled),
     padding: 0.55rem 0.7rem;
     font-size: 0.82rem;
   }
+
+  .settings-row-2 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.settings-row-2 {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.8fr) minmax(260px, 1.2fr);
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
 }
 
 /* Apple Reduced Motion & Transparency (Rule #14) */

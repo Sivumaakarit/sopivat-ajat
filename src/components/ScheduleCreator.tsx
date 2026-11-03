@@ -33,12 +33,75 @@ interface ScheduleCreatorProps {
   onNavigate: (view: ViewMode) => void;
 }
 
+function parseDeadlineToIsoAndTime(deadlineStr: string): { isoDate: string; time: string } {
+  if (!deadlineStr) return { isoDate: '', time: '23:59' };
+
+  let time = '23:59';
+  const timeMatch = deadlineStr.match(/klo\s*(\d{1,2}[:.]\d{2})/i) || deadlineStr.match(/(\d{1,2}:\d{2})/);
+  if (timeMatch) {
+    const rawTime = timeMatch[1].replace('.', ':');
+    const [h, m] = rawTime.split(':');
+    time = `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
+  }
+
+  let isoDate = '';
+  const isoMatch = deadlineStr.match(/\b(\d{4}-\d{2}-\d{2})\b/);
+  if (isoMatch) {
+    isoDate = isoMatch[1];
+  } else {
+    const dmyMatch = deadlineStr.match(/(\d{1,2})\.(\d{1,2})\.(?:(\d{4}))?/);
+    if (dmyMatch) {
+      const day = dmyMatch[1].padStart(2, '0');
+      const month = dmyMatch[2].padStart(2, '0');
+      const year = dmyMatch[3] || new Date().getFullYear().toString();
+      isoDate = `${year}-${month}-${day}`;
+    }
+  }
+
+  return { isoDate, time };
+}
+
 export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
   event,
   onUpdateEvent,
   onOpenPreview,
   onNavigate,
 }) => {
+  // Deadline date and time state
+  const initialDeadline = parseDeadlineToIsoAndTime(event.deadlineDate || '');
+  const [deadlineIsoDate, setDeadlineIsoDate] = useState(initialDeadline.isoDate);
+  const [deadlineNumberTime, setDeadlineNumberTime] = useState(initialDeadline.time);
+
+  // Sync state if event.deadlineDate changes
+  React.useEffect(() => {
+    const parsed = parseDeadlineToIsoAndTime(event.deadlineDate || '');
+    setDeadlineIsoDate(parsed.isoDate);
+    if (parsed.time) setDeadlineNumberTime(parsed.time);
+  }, [event.deadlineDate]);
+
+  const handleDeadlineDateChange = (newIsoDate: string) => {
+    setDeadlineIsoDate(newIsoDate);
+    if (!newIsoDate) {
+      onUpdateEvent({ ...event, deadlineDate: '' });
+      return;
+    }
+    const timeToUse = deadlineNumberTime || '23:59';
+    const formatted = `${formatFinnishDateLabel(newIsoDate)} klo ${timeToUse}`;
+    onUpdateEvent({ ...event, deadlineDate: formatted });
+  };
+
+  const handleDeadlineTimeChange = (newTime: string) => {
+    setDeadlineNumberTime(newTime);
+    if (!deadlineIsoDate) return;
+    const formatted = `${formatFinnishDateLabel(deadlineIsoDate)} klo ${newTime || '23:59'}`;
+    onUpdateEvent({ ...event, deadlineDate: formatted });
+  };
+
+  const handleClearDeadline = () => {
+    setDeadlineIsoDate('');
+    setDeadlineNumberTime('23:59');
+    onUpdateEvent({ ...event, deadlineDate: '' });
+  };
   // Current active day for slot creation (empty if starting from scratch with 0 slots)
   const [selectedDateLabel, setSelectedDateLabel] = useState(() => {
     if (event.slots.length > 0) return event.slots[0].dateLabel || event.slots[0].date;
@@ -301,42 +364,182 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
           </div>
         </div>
 
-        {/* Row 2: Milloin kysely sulkeutuu, Tapaamisen kesto & Minimimäärä */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-          <div className="form-group">
-            <label className="form-label">Milloin kysely sulkeutuu? (Vastausaika päättyy)</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="esim. Perjantaina 6.11. klo 18:00"
-              value={event.deadlineDate || ''}
-              onChange={e => onUpdateEvent({ ...event, deadlineDate: e.target.value })}
-            />
+        {/* Row 2: Kyselyn sulkeutumisaika (laajempi) + Kesto & Minimi */}
+        <div className="settings-row-2">
+          {/* Sulkeutumisaika card */}
+          <div style={{
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: '14px',
+            padding: '1rem 1.15rem',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
+                <label className="form-label" style={{ marginBottom: 0, fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Calendar size={15} color="var(--primary)" />
+                  <span>Kyselyn sulkeutumisaika (vastausaika päättyy)</span>
+                </label>
+                {event.deadlineDate && (
+                  <button
+                    type="button"
+                    onClick={handleClearDeadline}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#94a3b8',
+                      cursor: 'pointer',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      padding: '2px 6px',
+                    }}
+                    title="Poista takaraja"
+                  >
+                    ✕ Tyhjennä
+                  </button>
+                )}
+              </div>
+
+              {/* Date and Time pickers */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.65rem' }}>
+                <div style={{ flex: '1 1 150px', minWidth: '140px' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: '3px' }}>Päättymispäivä:</span>
+                  <input
+                    type="date"
+                    className="form-input"
+                    style={{ padding: '0.45rem 0.65rem', fontSize: '0.9rem', cursor: 'pointer' }}
+                    value={deadlineIsoDate}
+                    onChange={e => handleDeadlineDateChange(e.target.value)}
+                  />
+                </div>
+
+                <div style={{ flex: '0 1 120px', minWidth: '105px' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: '3px' }}>Klo:</span>
+                  <input
+                    type="time"
+                    className="form-input"
+                    style={{ padding: '0.45rem 0.65rem', fontSize: '0.9rem', cursor: 'pointer' }}
+                    value={deadlineNumberTime}
+                    onChange={e => handleDeadlineTimeChange(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Quick time preset pills */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.65rem' }}>
+                <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Pika-ajat:</span>
+                <button
+                  type="button"
+                  className="select-all-btn"
+                  style={{
+                    background: deadlineNumberTime === '23:59' ? 'var(--primary)' : 'rgba(118, 118, 128, 0.08)',
+                    color: deadlineNumberTime === '23:59' ? '#ffffff' : 'var(--text-main)',
+                    border: 'none',
+                    fontSize: '0.75rem',
+                    padding: '3px 8px',
+                  }}
+                  onClick={() => handleDeadlineTimeChange('23:59')}
+                >
+                  23:59 (Päivän loppuun)
+                </button>
+                <button
+                  type="button"
+                  className="select-all-btn"
+                  style={{
+                    background: deadlineNumberTime === '18:00' ? 'var(--primary)' : 'rgba(118, 118, 128, 0.08)',
+                    color: deadlineNumberTime === '18:00' ? '#ffffff' : 'var(--text-main)',
+                    border: 'none',
+                    fontSize: '0.75rem',
+                    padding: '3px 8px',
+                  }}
+                  onClick={() => handleDeadlineTimeChange('18:00')}
+                >
+                  18:00 (Ilta)
+                </button>
+                <button
+                  type="button"
+                  className="select-all-btn"
+                  style={{
+                    background: deadlineNumberTime === '15:00' ? 'var(--primary)' : 'rgba(118, 118, 128, 0.08)',
+                    color: deadlineNumberTime === '15:00' ? '#ffffff' : 'var(--text-main)',
+                    border: 'none',
+                    fontSize: '0.75rem',
+                    padding: '3px 8px',
+                  }}
+                  onClick={() => handleDeadlineTimeChange('15:00')}
+                >
+                  15:00 (Koulun jälkeen)
+                </button>
+              </div>
+            </div>
+
+            {/* Formatted preview of what parents and Wilma message will show */}
+            {event.deadlineDate ? (
+              <div style={{
+                background: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                borderRadius: '8px',
+                padding: '0.45rem 0.75rem',
+                fontSize: '0.84rem',
+                color: '#1d4ed8',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                marginTop: '0.25rem',
+              }}>
+                <Sparkles size={14} />
+                <span>Näkyy vanhemmille: <strong>{event.deadlineDate}</strong></span>
+              </div>
+            ) : (
+              <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontStyle: 'italic', marginTop: '0.25rem' }}>
+                Ei asetettua takarajaa (kysely pysyy auki kunnes suljet sen manuaalisesti).
+              </span>
+            )}
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Tapaamisen kesto (minuuttia)</label>
-            <input
-              type="number"
-              className="form-input"
-              value={event.slotDurationMinutes}
-              min={5}
-              max={120}
-              step={5}
-              onChange={e => onUpdateEvent({ ...event, slotDurationMinutes: parseInt(e.target.value, 10) || 20 })}
-            />
-          </div>
+          {/* Duration & Minimum selections card */}
+          <div style={{
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '14px',
+            padding: '1rem 1.15rem',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: '0.85rem',
+          }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Clock size={14} color="var(--primary)" />
+                <span>Tapaamisen kesto (minuuttia)</span>
+              </label>
+              <input
+                type="number"
+                className="form-input"
+                value={event.slotDurationMinutes}
+                min={5}
+                max={120}
+                step={5}
+                onChange={e => onUpdateEvent({ ...event, slotDurationMinutes: parseInt(e.target.value, 10) || 20 })}
+              />
+            </div>
 
-          <div className="form-group">
-            <label className="form-label">Minimimäärä rastitettavia aikoja</label>
-            <input
-              type="number"
-              className="form-input"
-              value={event.minSelectionsRequired}
-              min={1}
-              max={10}
-              onChange={e => onUpdateEvent({ ...event, minSelectionsRequired: parseInt(e.target.value, 10) || 3 })}
-            />
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <CheckCircle2 size={14} color="#16a34a" />
+                <span>Minimimäärä rastitettavia aikoja</span>
+              </label>
+              <input
+                type="number"
+                className="form-input"
+                value={event.minSelectionsRequired}
+                min={1}
+                max={10}
+                onChange={e => onUpdateEvent({ ...event, minSelectionsRequired: parseInt(e.target.value, 10) || 3 })}
+              />
+            </div>
           </div>
         </div>
 

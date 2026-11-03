@@ -280,9 +280,9 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
 
       {/* Basic Settings Card */}
       <div className="card">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
-          <Settings size={20} color="#2563eb" />
-          <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1e293b' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '1px solid #f0f0f2', paddingBottom: '0.75rem' }}>
+          <Settings size={20} color="var(--primary)" />
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.015em' }}>
             Keskustelun perustiedot
           </h3>
         </div>
@@ -416,8 +416,8 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
       <div className="card">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Clock size={20} color="#2563eb" />
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1e293b' }}>
+            <Clock size={20} color="var(--primary)" />
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.015em' }}>
               Päivien ja aikojen hallinta
             </h3>
           </div>
@@ -429,21 +429,21 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
               onClick={() => handleAddSpecificDay(nextBusinessDay.isoDate, nextBusinessDay.dateLabel, nextBusinessDay.section)}
               title={`Luo seuraava arkipäivä ${nextBusinessDay.dateLabel} yhdellä klikkauksella`}
               style={{
-                background: '#f0fdf4',
-                border: '1.5px solid #86efac',
-                color: '#15803d',
-                padding: '0.45rem 0.85rem',
-                borderRadius: '8px',
+                background: 'rgba(52, 199, 89, 0.1)',
+                border: '1px solid rgba(52, 199, 89, 0.28)',
+                color: '#28a745',
+                padding: '0.45rem 0.95rem',
+                borderRadius: 'var(--radius-full)',
                 fontSize: '0.85rem',
-                fontWeight: 700,
+                fontWeight: 600,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.4rem',
-                transition: 'all 0.15s ease'
+                transition: 'all 0.18s var(--apple-spring)'
               }}
             >
-              <Zap size={14} color="#16a34a" />
+              <Zap size={14} color="#34c759" />
               <span>+ Seuraava arkipäivä: <strong>{nextBusinessDay.dateLabel}</strong></span>
             </button>
 
@@ -606,10 +606,11 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          background: isSelected ? '#eff6ff' : '#ffffff',
-                          border: `1.5px solid ${isSelected ? '#3b82f6' : '#e2e8f0'}`,
-                          borderRadius: '8px',
-                          padding: '2px 4px 2px 8px',
+                          background: isSelected ? 'rgba(0, 113, 227, 0.08)' : '#ffffff',
+                          border: `1px solid ${isSelected ? 'var(--primary)' : 'rgba(0, 0, 0, 0.08)'}`,
+                          borderRadius: 'var(--radius-full)',
+                          padding: '3px 6px 3px 10px',
+                          transition: 'all 0.18s var(--apple-spring)',
                         }}
                       >
                         <button
@@ -617,13 +618,14 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
                           style={{
                             border: 'none',
                             background: 'transparent',
-                            color: isSelected ? '#1d4ed8' : '#334155',
-                            fontWeight: isSelected ? 700 : 500,
+                            color: isSelected ? 'var(--primary)' : 'var(--text-main)',
+                            fontWeight: isSelected ? 600 : 500,
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.4rem',
                             padding: '4px 6px',
+                            fontSize: '0.88rem',
                           }}
                           onClick={() => {
                             setSelectedDateLabel(dayLabel);
@@ -640,11 +642,12 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
                         >
                           <span>{dayLabel}</span>
                           <span style={{
-                            fontSize: '0.75rem',
-                            background: isSelected ? '#2563eb' : '#f1f5f9',
-                            color: isSelected ? '#fff' : '#64748b',
-                            padding: '1px 6px',
-                            borderRadius: '8px',
+                            fontSize: '0.72rem',
+                            background: isSelected ? 'var(--primary)' : 'rgba(118, 118, 128, 0.12)',
+                            color: isSelected ? '#ffffff' : 'var(--text-subtle)',
+                            padding: '1px 7px',
+                            borderRadius: 'var(--radius-full)',
+                            fontWeight: 600,
                           }}>
                             {count}
                           </span>
@@ -668,21 +671,22 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
 
         {/* Smart Adder Box */}
         <div style={{
-          background: '#f8fafc',
-          border: '1.5px solid #bfdbfe',
-          borderRadius: '12px',
-          padding: '1.25rem',
+          background: 'rgba(255, 255, 255, 0.9)',
+          border: '1px solid rgba(0, 0, 0, 0.08)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '1.35rem',
           marginBottom: '1.5rem',
+          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.02)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontWeight: 800, color: '#1e293b', fontSize: '1rem' }}>
+              <span style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '1rem', letterSpacing: '-0.015em' }}>
                 Ajan lisäys: {selectedDateLabel}
               </span>
               <button
                 type="button"
                 className="day-action-btn"
-                style={{ color: '#ef4444' }}
+                style={{ color: 'var(--danger)' }}
                 onClick={() => handleDeleteDay(selectedDateLabel)}
                 title="Poista tämä päivä kokonaan"
               >
@@ -695,7 +699,7 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
               {/* Copy times from another day */}
               {distinctDayLabels.length > 1 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginRight: '0.5rem' }}>
-                  <Copy size={13} color="#2563eb" />
+                  <Copy size={13} color="var(--primary)" />
                   <select
                     className="form-select"
                     style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', width: 'auto' }}
@@ -861,9 +865,9 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
           {event.slots.length > 0 && (
             <div style={{
               marginTop: '1.75rem',
-              background: '#f0fdf4',
-              border: '2px solid #86efac',
-              borderRadius: '14px',
+              background: 'rgba(52, 199, 89, 0.08)',
+              border: '1px solid rgba(52, 199, 89, 0.25)',
+              borderRadius: 'var(--radius-lg)',
               padding: '1.25rem 1.5rem',
               display: 'flex',
               alignItems: 'center',
@@ -872,14 +876,14 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
               gap: '1rem',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ background: '#dcfce7', color: '#16a34a', padding: '0.5rem', borderRadius: '50%', display: 'flex' }}>
+                <div style={{ background: 'rgba(52, 199, 89, 0.15)', color: '#28a745', padding: '0.5rem', borderRadius: '50%', display: 'flex' }}>
                   <CheckCircle2 size={24} />
                 </div>
                 <div>
-                  <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#14532d', margin: 0 }}>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.015em' }}>
                     Keskusteluajat luotu ({event.slots.length} aikaa {distinctDayLabels.length} päivälle)
                   </h4>
-                  <p style={{ color: '#166534', fontSize: '0.85rem', margin: '2px 0 0 0' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '2px 0 0 0' }}>
                     Siirry seuraavaksi tarkastelemaan toiveita tai esikatsele huoltajanäkymää.
                   </p>
                 </div>
@@ -890,23 +894,24 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
                   type="button"
                   onClick={() => onNavigate('parent')}
                   style={{
-                    background: '#16a34a',
+                    background: 'var(--primary)',
                     color: '#ffffff',
                     border: 'none',
-                    padding: '0.65rem 1.3rem',
-                    borderRadius: '10px',
-                    fontWeight: 800,
-                    fontSize: '0.95rem',
+                    padding: '0.65rem 1.35rem',
+                    borderRadius: 'var(--radius-full)',
+                    fontWeight: 600,
+                    fontSize: '0.92rem',
                     cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '0.5rem',
-                    boxShadow: '0 4px 10px rgba(22, 163, 74, 0.25)',
+                    boxShadow: '0 2px 8px rgba(0, 113, 227, 0.28)',
+                    transition: 'all 0.2s var(--apple-spring)',
                   }}
                   title="Esikatsele huoltajanäkymää ja kopioi jakolinkki Wilmaan"
                 >
                   <span>Vaihe 2: Esikatsele ja jaa huoltajille</span>
-                  <ArrowRight size={18} />
+                  <ArrowRight size={17} />
                 </button>
                 <button
                   type="button"
@@ -1009,30 +1014,30 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
         )}
       </div>
 
-      {/* Bottom Big Guided Next Step Banner */}
+      {/* Bottom Big Guided Next Step Banner (Apple Style) */}
       {event.slots.length > 0 && (
         <div style={{
           marginTop: '1.5rem',
-          background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+          background: 'linear-gradient(135deg, #0071e3 0%, #005bb5 100%)',
           color: '#ffffff',
-          borderRadius: '16px',
-          padding: '1.5rem 1.75rem',
+          borderRadius: 'var(--radius-xl)',
+          padding: '1.6rem 1.85rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '1.25rem',
-          boxShadow: '0 10px 25px -5px rgba(22, 163, 74, 0.35)',
+          boxShadow: '0 8px 24px rgba(0, 113, 227, 0.22)',
         }}>
           <div>
-            <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.9, fontWeight: 800 }}>
-              🚀 Johdatuspolku: Vaihe 1/3 valmis
+            <span style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.9, fontWeight: 700 }}>
+              Johdatuspolku: Vaihe 1/3 valmis
             </span>
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '4px 0 2px 0', color: '#ffffff' }}>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 700, margin: '4px 0 2px 0', color: '#ffffff', letterSpacing: '-0.02em' }}>
               Päivät ja ajat on luotu! Siirrytäänkö eteenpäin?
             </h3>
             <p style={{ opacity: 0.92, fontSize: '0.9rem', margin: 0 }}>
-              Siirry aikasovitukseen (palapeli) tarkastelemaan vastauksia tai jaa julkinen linkki huoltajille Wilmassa.
+              Siirry aikasovitukseen tarkastelemaan toiveita tai jaa julkinen linkki huoltajille Wilmassa.
             </p>
           </div>
 
@@ -1042,40 +1047,43 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
               onClick={() => onNavigate('parent')}
               style={{
                 background: '#ffffff',
-                color: '#15803d',
+                color: 'var(--primary)',
                 border: 'none',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '10px',
-                fontWeight: 800,
-                fontSize: '1rem',
+                padding: '0.7rem 1.45rem',
+                borderRadius: 'var(--radius-full)',
+                fontWeight: 600,
+                fontSize: '0.95rem',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.6rem',
-                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.15)',
+                gap: '0.5rem',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.2s var(--apple-spring)',
               }}
             >
               <span>Vaihe 2: Esikatsele ja jaa huoltajille</span>
-              <ArrowRight size={20} />
+              <ArrowRight size={17} />
             </button>
 
             <button
               type="button"
               onClick={() => onNavigate('matching')}
               style={{
-                background: 'rgba(255, 255, 255, 0.2)',
+                background: 'rgba(255, 255, 255, 0.16)',
                 color: '#ffffff',
-                border: '1.5px solid rgba(255, 255, 255, 0.45)',
-                padding: '0.75rem 1.25rem',
-                borderRadius: '10px',
-                fontWeight: 700,
+                border: '1px solid rgba(255, 255, 255, 0.35)',
+                padding: '0.7rem 1.25rem',
+                borderRadius: 'var(--radius-full)',
+                fontWeight: 600,
+                fontSize: '0.92rem',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.5rem',
+                transition: 'all 0.2s var(--apple-spring)',
               }}
             >
-              <span>Tai siirry suoraan aikasovitukseen</span>
+              <span>Siirry aikasovitukseen</span>
             </button>
           </div>
         </div>

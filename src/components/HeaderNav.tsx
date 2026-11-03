@@ -82,7 +82,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
             <span>Aikasovitus</span>
             {submissionsCount > 0 && (
               <span className="nav-badge" style={{
-                background: assignedCount === submissionsCount ? '#16a34a' : '#2563eb',
+                background: assignedCount === submissionsCount ? 'var(--success)' : 'var(--primary)',
               }}>
                 {assignedCount}/{submissionsCount}
               </span>
@@ -190,7 +190,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
                 <span style={{ flex: 1 }}>Aikasovitus</span>
                 {submissionsCount > 0 && (
                   <span className="nav-badge" style={{
-                    background: assignedCount === submissionsCount ? '#16a34a' : '#2563eb',
+                    background: assignedCount === submissionsCount ? 'var(--success)' : 'var(--primary)',
                   }}>
                     {assignedCount}/{submissionsCount}
                   </span>

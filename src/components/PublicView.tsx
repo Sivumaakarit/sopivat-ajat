@@ -95,12 +95,12 @@ export const PublicView: React.FC<PublicViewProps> = ({
         <div
           className="card"
           style={{
-            background: 'linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%)',
-            border: '2px solid #93c5fd',
+            background: '#ffffff',
+            border: '1px solid rgba(0, 0, 0, 0.08)',
             padding: '1.25rem 1.5rem',
             marginBottom: '1.5rem',
-            borderRadius: '14px',
-            boxShadow: '0 4px 15px rgba(37, 99, 235, 0.08)',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: 'var(--shadow-sm)',
           }}
         >
           <div
@@ -119,12 +119,12 @@ export const PublicView: React.FC<PublicViewProps> = ({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.4rem',
-                  background: '#dbeafe',
-                  color: '#1d4ed8',
-                  padding: '0.25rem 0.65rem',
-                  borderRadius: '6px',
+                  background: 'var(--primary-light)',
+                  color: 'var(--primary)',
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: 'var(--radius-full)',
                   fontSize: '0.78rem',
-                  fontWeight: 800,
+                  fontWeight: 600,
                   textTransform: 'uppercase',
                   letterSpacing: '0.04em',
                   marginBottom: '0.35rem',
@@ -133,10 +133,10 @@ export const PublicView: React.FC<PublicViewProps> = ({
                 <Sparkles size={14} />
                 <span>Vaihe 4 / 4: Julkaistu aikataulu & jakaminen</span>
               </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.02em', margin: '0 0 4px 0' }}>
                 Jaa vahvistettu aikataulu huoltajille Wilmassa
               </h3>
-              <p style={{ color: '#475569', fontSize: '0.9rem', margin: 0, maxWidth: '640px' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0, maxWidth: '640px' }}>
                 Alla näet aikataulusivun sellaisena kuin huoltajat näkevät sen omalla laitteellaan (ilman tätä opettajan jakolaatikkoa).
               </p>
             </div>
@@ -146,17 +146,19 @@ export const PublicView: React.FC<PublicViewProps> = ({
                 type="button"
                 onClick={() => onNavigate('matching')}
                 style={{
-                  background: '#2563eb',
+                  background: 'var(--primary)',
                   color: '#ffffff',
                   border: 'none',
-                  padding: '0.65rem 1.25rem',
-                  borderRadius: '10px',
-                  fontWeight: 800,
+                  padding: '0.65rem 1.35rem',
+                  borderRadius: 'var(--radius-full)',
+                  fontWeight: 600,
                   fontSize: '0.9rem',
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.5rem',
+                  boxShadow: '0 2px 8px rgba(0, 113, 227, 0.28)',
+                  transition: 'all 0.2s var(--apple-spring)',
                 }}
               >
                 <span>Siirry aikasovitukseen (palapeli)</span>
@@ -219,7 +221,7 @@ export const PublicView: React.FC<PublicViewProps> = ({
                 whiteSpace: 'nowrap',
               }}
             >
-              {copiedLink ? <Check size={16} color="#16a34a" /> : <Copy size={16} />}
+              {copiedLink ? <Check size={16} color="var(--success)" /> : <Copy size={16} />}
               <span>{copiedLink ? 'Linkki kopioitu! ✓' : 'Kopioi linkki'}</span>
             </button>
 
@@ -227,19 +229,20 @@ export const PublicView: React.FC<PublicViewProps> = ({
               type="button"
               onClick={handleCopyWilma}
               style={{
-                background: '#16a34a',
+                background: 'var(--success)',
                 color: '#ffffff',
                 border: 'none',
-                padding: '0.55rem 1.1rem',
-                borderRadius: '8px',
-                fontWeight: 700,
+                padding: '0.55rem 1.15rem',
+                borderRadius: 'var(--radius-full)',
+                fontWeight: 600,
                 fontSize: '0.85rem',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.45rem',
                 whiteSpace: 'nowrap',
-                boxShadow: '0 2px 6px rgba(22, 163, 74, 0.2)',
+                boxShadow: '0 2px 8px rgba(52, 199, 89, 0.28)',
+                transition: 'all 0.2s var(--apple-spring)',
               }}
             >
               {copiedWilma ? <Check size={16} /> : <MessageSquare size={16} />}
@@ -472,8 +475,9 @@ export const PublicView: React.FC<PublicViewProps> = ({
               type="button"
               className={`select-all-btn ${filterDay === 'ALL' ? 'active' : ''}`}
               style={{
-                background: filterDay === 'ALL' ? '#2563eb' : '#ffffff',
-                color: filterDay === 'ALL' ? '#ffffff' : '#475569',
+                background: filterDay === 'ALL' ? 'var(--primary)' : 'rgba(118, 118, 128, 0.08)',
+                color: filterDay === 'ALL' ? '#ffffff' : 'var(--text-main)',
+                border: 'none',
               }}
               onClick={() => setFilterDay('ALL')}
             >
@@ -485,8 +489,9 @@ export const PublicView: React.FC<PublicViewProps> = ({
                 type="button"
                 className={`select-all-btn ${filterDay === day ? 'active' : ''}`}
                 style={{
-                  background: filterDay === day ? '#2563eb' : '#ffffff',
-                  color: filterDay === day ? '#ffffff' : '#475569',
+                  background: filterDay === day ? 'var(--primary)' : 'rgba(118, 118, 128, 0.08)',
+                  color: filterDay === day ? '#ffffff' : 'var(--text-main)',
+                  border: 'none',
                 }}
                 onClick={() => setFilterDay(day)}
               >

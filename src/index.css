@@ -1,36 +1,48 @@
 :root {
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-light: #eff6ff;
-  --primary-border: #bfdbfe;
+  /* Apple System Color Palette */
+  --primary: #0071e3;
+  --primary-hover: #0077ed;
+  --primary-active: #0062c4;
+  --primary-light: rgba(0, 113, 227, 0.08);
+  --primary-border: rgba(0, 113, 227, 0.24);
   
-  --success: #16a34a;
-  --success-light: #f0fdf4;
-  --success-border: #bbf7d0;
+  --success: #34c759;
+  --success-hover: #30b753;
+  --success-light: rgba(52, 199, 89, 0.12);
+  --success-border: rgba(52, 199, 89, 0.28);
 
-  --warning: #f59e0b;
-  --warning-light: #fffbeb;
+  --warning: #ff9500;
+  --warning-light: rgba(255, 149, 0, 0.12);
 
-  --danger: #ef4444;
-  --danger-light: #fef2f2;
+  --danger: #ff3b30;
+  --danger-light: rgba(255, 59, 48, 0.1);
 
-  --text-main: #0f172a;
-  --text-muted: #475569;
-  --text-subtle: #64748b;
+  /* Apple Human Interface Typography & Contrast */
+  --text-main: #1d1d1f;
+  --text-muted: #515154;
+  --text-subtle: #86868b;
 
-  --bg-app: #f8fafc;
+  /* Apple Canvas & Materials */
+  --bg-app: #f5f5f7;
   --bg-card: #ffffff;
-  --border: #e2e8f0;
-  --border-focus: #3b82f6;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-focus: #0071e3;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-full: 9999px;
+  /* Apple Squircle / Continuous Curve Radii */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-full: 980px;
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+  /* Apple Soft Ambient Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.03);
+
+  /* Apple Motion Curve */
+  --apple-spring: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 * {
@@ -40,11 +52,20 @@
 }
 
 body {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", system-ui, sans-serif;
   color: var(--text-main);
   background-color: var(--bg-app);
-  line-height: 1.5;
+  line-height: 1.47059;
+  letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, .paper-title {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro", system-ui, sans-serif;
+  letter-spacing: -0.022em;
+  font-weight: 700;
+  color: var(--text-main);
 }
 
 button, input, textarea, select {
@@ -52,16 +73,28 @@ button, input, textarea, select {
   font-size: inherit;
 }
 
-/* App Header Nav with Glassmorphism */
+/* Micro-interactions: Direct response on pointer-down (Apple WWDC fluid interface rule) */
+button:active:not(:disabled),
+.btn-primary:active:not(:disabled),
+.btn-secondary:active:not(:disabled),
+.submit-btn:active:not(:disabled),
+.slot-toggle-btn:active,
+.view-btn:active,
+.day-action-btn:active {
+  transform: scale(0.975);
+  transition: transform 70ms ease-out;
+}
+
+/* App Header Nav with Apple Translucent Frosted Glass */
 .app-header {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   position: sticky;
   top: 0;
   z-index: 50;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
 }
 
 .header-container {
@@ -77,10 +110,16 @@ button, input, textarea, select {
 .brand-badge {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
   font-weight: 700;
   font-size: 1.15rem;
-  color: #1e293b;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+  transition: opacity 0.15s ease;
+}
+
+.brand-badge:hover {
+  opacity: 0.85;
 }
 
 .brand-icon {
@@ -93,27 +132,28 @@ button, input, textarea, select {
   justify-content: center;
 }
 
+/* Apple Segmented Control (macOS & iOS Pill Switcher) */
 .view-switcher {
   display: flex;
-  background: #f1f5f9;
-  padding: 0.25rem;
+  background: rgba(118, 118, 128, 0.12);
+  padding: 3px;
   border-radius: var(--radius-md);
-  gap: 0.25rem;
+  gap: 2px;
 }
 
 .view-btn {
   border: none;
   background: transparent;
-  padding: 0.5rem 0.85rem;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
+  padding: 0.42rem 0.85rem;
+  border-radius: calc(var(--radius-md) - 3px);
+  font-weight: 500;
   font-size: 0.85rem;
   color: var(--text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  transition: all 0.15s ease;
+  transition: all 0.2s var(--apple-spring);
 }
 
 .view-btn:hover {
@@ -122,8 +162,9 @@ button, input, textarea, select {
 
 .view-btn.active {
   background: #ffffff;
-  color: var(--primary);
-  box-shadow: var(--shadow-sm);
+  color: var(--text-main);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12), 0 0.5px 1px rgba(0, 0, 0, 0.04);
 }
 
 .nav-badge {
@@ -146,9 +187,9 @@ button, input, textarea, select {
 .mobile-menu-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 99;
   animation: fadeIn 0.2s ease;
 }
@@ -162,11 +203,11 @@ button, input, textarea, select {
   height: 100vh;
   background: #ffffff;
   z-index: 100;
-  box-shadow: -6px 0 25px rgba(0, 0, 0, 0.12);
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
   padding: 1.25rem;
-  animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slideInRight 0.25s var(--apple-spring);
 }
 
 .mobile-menu-header {
@@ -179,11 +220,11 @@ button, input, textarea, select {
 }
 
 .mobile-menu-close {
-  background: #f1f5f9;
+  background: rgba(118, 118, 128, 0.1);
   border: none;
-  border-radius: 8px;
-  width: 34px;
-  height: 34px;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -193,14 +234,14 @@ button, input, textarea, select {
 }
 
 .mobile-menu-close:hover {
-  background: #e2e8f0;
+  background: rgba(118, 118, 128, 0.18);
   color: var(--text-main);
 }
 
 .mobile-nav-links {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
   flex: 1;
   overflow-y: auto;
 }
@@ -210,12 +251,12 @@ button, input, textarea, select {
   align-items: center;
   gap: 0.75rem;
   width: 100%;
-  padding: 0.85rem 1rem;
+  padding: 0.75rem 0.95rem;
   border-radius: var(--radius-md);
   border: none;
   background: transparent;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-muted);
   cursor: pointer;
   text-align: left;
@@ -223,15 +264,14 @@ button, input, textarea, select {
 }
 
 .mobile-nav-item:hover {
-  background: #f8fafc;
+  background: rgba(118, 118, 128, 0.08);
   color: var(--text-main);
 }
 
 .mobile-nav-item.active {
   background: var(--primary-light);
   color: var(--primary);
-  font-weight: 700;
-  border-left: 3px solid var(--primary);
+  font-weight: 600;
 }
 
 .mobile-menu-footer {
@@ -253,18 +293,19 @@ button, input, textarea, select {
 /* Main Container */
 .main-layout {
   max-width: 1040px;
-  margin: 1.5rem auto 4rem auto;
-  padding: 0 1rem;
+  margin: 1.75rem auto 4rem auto;
+  padding: 0 1.25rem;
 }
 
-/* Base Card */
+/* Base Card (Apple Squircle Surface) */
 .card {
   background: var(--bg-card);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: var(--radius-lg);
   padding: 1.75rem;
   box-shadow: var(--shadow-sm);
   margin-bottom: 1.5rem;
+  transition: box-shadow 0.25s var(--apple-spring);
 }
 
 /* Paper-style Header Box */
@@ -272,24 +313,24 @@ button, input, textarea, select {
   display: flex;
   gap: 1.5rem;
   align-items: flex-start;
-  border-bottom: 2px dashed #e2e8f0;
+  border-bottom: 1px solid #f0f0f2;
   padding-bottom: 1.5rem;
   margin-bottom: 1.5rem;
 }
 
 .brand-avatar,
 .snoopy-avatar {
-  width: 90px;
-  height: 90px;
+  width: 80px;
+  height: 80px;
   flex-shrink: 0;
-  border-radius: var(--radius-lg);
+  border-radius: 16px;
   background: #ffffff;
-  border: 1px solid var(--border);
-  padding: 0.35rem;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 0.4rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 .brand-avatar img,
@@ -297,14 +338,15 @@ button, input, textarea, select {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  border-radius: calc(var(--radius-lg) - 4px);
+  border-radius: 12px;
 }
 
 .paper-title {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.02em;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.025em;
+  line-height: 1.2;
   margin-bottom: 0.5rem;
 }
 
@@ -312,10 +354,10 @@ button, input, textarea, select {
   color: var(--text-muted);
   white-space: pre-line;
   font-size: 0.95rem;
-  line-height: 1.6;
+  line-height: 1.55;
 }
 
-/* Forms & Inputs */
+/* Forms & Inputs (Apple Style) */
 .form-group {
   margin-bottom: 1.25rem;
 }
@@ -323,26 +365,27 @@ button, input, textarea, select {
 .form-label {
   display: block;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   margin-bottom: 0.4rem;
-  color: #334155;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
 }
 
 .form-input, .form-textarea, .form-select {
   width: 100%;
-  padding: 0.65rem 0.85rem;
-  border: 1.5px solid var(--border);
+  padding: 0.65rem 0.9rem;
+  border: 1px solid #d2d2d7;
   border-radius: var(--radius-md);
   font-size: 0.95rem;
   color: var(--text-main);
   background: #ffffff;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.18s var(--apple-spring), box-shadow 0.18s var(--apple-spring);
 }
 
 .form-input:focus, .form-textarea:focus, .form-select:focus {
   outline: none;
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.18);
 }
 
 /* GDPR Student Name Input Box */
@@ -379,7 +422,7 @@ button, input, textarea, select {
 .name-input-initial input::placeholder {
   text-transform: none !important;
   font-weight: 400 !important;
-  color: #94a3b8 !important;
+  color: var(--text-subtle) !important;
   letter-spacing: normal !important;
   text-align: left !important;
 }
@@ -404,7 +447,7 @@ button, input, textarea, select {
   background: var(--primary-light);
   color: var(--primary);
   border: 1px solid var(--primary-border);
-  padding: 0.4rem 0.85rem;
+  padding: 0.35rem 0.85rem;
   border-radius: var(--radius-full);
   font-size: 0.85rem;
   margin-top: 0.5rem;
@@ -420,7 +463,7 @@ button, input, textarea, select {
   font-weight: 700;
 }
 
-/* Day Schedule Grid */
+/* Day Schedule Grid (Apple Bento Layout) */
 .day-columns-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
@@ -429,42 +472,45 @@ button, input, textarea, select {
 }
 
 .day-column-card {
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
-  border-radius: var(--radius-md);
-  padding: 1rem;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  padding: 1.1rem;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s var(--apple-spring), box-shadow 0.2s var(--apple-spring);
 }
 
 .day-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid #f0f0f2;
 }
 
 .day-title {
   font-weight: 700;
   font-size: 0.95rem;
-  color: #1e293b;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
 }
 
 .select-all-btn {
-  background: #ffffff;
-  border: 1px solid var(--border);
+  background: rgba(118, 118, 128, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   color: var(--primary);
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-full);
+  font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  transition: all 0.15s;
+  gap: 0.3rem;
+  transition: all 0.18s var(--apple-spring);
 }
 
 .select-all-btn:hover {
@@ -481,8 +527,8 @@ button, input, textarea, select {
 /* Progress bar */
 .progress-container {
   width: 100%;
-  height: 8px;
-  background: #e2e8f0;
+  height: 6px;
+  background: rgba(118, 118, 128, 0.14);
   border-radius: var(--radius-full);
   overflow: hidden;
   margin-top: 0.5rem;
@@ -490,15 +536,15 @@ button, input, textarea, select {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #2563eb, #16a34a);
+  background: linear-gradient(90deg, var(--primary), var(--success));
   border-radius: var(--radius-full);
-  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 0.35s var(--apple-spring);
 }
 
 /* Highlighted desired slots when hovering a student */
 .matching-table tr.highlighted-desired-slot td {
-  background: #f5f3ff !important; /* Soft violet/indigo glow */
-  border-color: #c4b5fd !important;
+  background: rgba(0, 113, 227, 0.06) !important;
+  border-color: rgba(0, 113, 227, 0.25) !important;
   transition: all 0.2s ease;
 }
 
@@ -506,19 +552,19 @@ button, input, textarea, select {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: #ede9fe;
-  color: #6d28d9;
-  border: 1px solid #ddd6fe;
-  padding: 0.2rem 0.5rem;
-  border-radius: var(--radius-sm);
+  background: rgba(175, 82, 222, 0.12);
+  color: #af52de;
+  border: 1px solid rgba(175, 82, 222, 0.25);
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-full);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s var(--apple-spring);
 }
 
 .swap-badge:hover {
-  background: #ddd6fe;
+  background: rgba(175, 82, 222, 0.18);
   transform: translateY(-1px);
 }
 
@@ -526,22 +572,22 @@ button, input, textarea, select {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: #dcfce7;
-  color: #15803d;
-  border: 1px solid #bbf7d0;
-  padding: 0.2rem 0.5rem;
-  border-radius: var(--radius-sm);
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid var(--success-border);
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-full);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* Day card actions */
 .day-action-btn {
   background: transparent;
   border: none;
-  color: #94a3b8;
-  padding: 0.25rem;
-  border-radius: var(--radius-sm);
+  color: var(--text-subtle);
+  padding: 0.3rem;
+  border-radius: 6px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -550,57 +596,58 @@ button, input, textarea, select {
 }
 
 .day-action-btn:hover {
-  background: #fee2e2;
-  color: #ef4444;
+  background: rgba(255, 59, 48, 0.1);
+  color: var(--danger);
 }
 
-/* Slot Toggle Button (Parent View) */
+/* Slot Toggle Button (Parent View - Apple Physical Touch Style) */
 .slot-toggle-btn {
   width: 100%;
-  padding: 0.65rem 0.75rem;
+  padding: 0.75rem 0.95rem;
   background: #ffffff;
-  border: 1.5px solid #cbd5e1;
+  border: 1px solid #d2d2d7;
   border-radius: var(--radius-md);
   font-weight: 600;
-  font-size: 0.9rem;
-  color: #334155;
+  font-size: 0.92rem;
+  color: var(--text-main);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  transition: all 0.15s ease;
+  transition: all 0.18s var(--apple-spring);
   user-select: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .slot-toggle-btn:hover {
   border-color: var(--primary);
-  background: #f8fafc;
+  background: #fbfbfd;
 }
 
 .slot-toggle-btn.selected {
-  background: #2563eb;
-  border-color: #1d4ed8;
+  background: var(--primary);
+  border-color: var(--primary);
   color: #ffffff;
-  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 4px 14px rgba(0, 113, 227, 0.3);
 }
 
 .slot-toggle-btn.selected .slot-check {
   background: #ffffff;
-  color: #2563eb;
+  color: var(--primary);
 }
 
 .slot-check {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: #e2e8f0;
+  background: #e5e5ea;
   color: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.75rem;
   font-weight: 700;
-  transition: all 0.15s ease;
+  transition: all 0.18s var(--apple-spring);
 }
 
 /* Subtle GDPR Info Link */
@@ -608,8 +655,8 @@ button, input, textarea, select {
   background: none;
   border: none;
   padding: 0;
-  font-size: 0.74rem;
-  color: #64748b;
+  font-size: 0.76rem;
+  color: var(--text-subtle);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -624,24 +671,26 @@ button, input, textarea, select {
   color: var(--primary);
 }
 
-/* Floating / Sticky Submission Bar */
+/* Floating / Sticky Submission Bar (Apple Frosted Glass) */
 .submission-bar {
   position: sticky;
   bottom: 1.5rem;
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
   padding: 1rem 1.5rem;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.03);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   z-index: 40;
-  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+  transition: opacity 0.2s var(--apple-spring), transform 0.2s var(--apple-spring), visibility 0.2s;
 }
 
-/* Hide floating bar when typing or keyboard is active so it never obstructs inputs or mobile screen */
+/* Hide floating bar when typing or keyboard is active */
 body:has(input:focus, textarea:focus) .submission-bar,
 .submission-bar.hidden-on-input {
   opacity: 0 !important;
@@ -662,81 +711,84 @@ body:has(input:focus, textarea:focus) .submission-bar,
   color: #ffffff;
   border: none;
   padding: 0.75rem 1.75rem;
-  border-radius: var(--radius-md);
-  font-weight: 700;
-  font-size: 1rem;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: 0.98rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: all 0.15s ease;
+  transition: all 0.2s var(--apple-spring);
+  box-shadow: 0 2px 8px rgba(0, 113, 227, 0.25);
 }
 
 .submit-btn:hover:not(:disabled) {
   background: var(--primary-hover);
-  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 113, 227, 0.35);
 }
 
 .submit-btn:disabled {
-  background: #cbd5e1;
-  color: #64748b;
+  background: #d2d2d7;
+  color: #86868b;
   cursor: not-allowed;
-  transform: none;
+  box-shadow: none;
 }
 
-/* Primary and secondary action buttons */
+/* Primary and Secondary Apple Action Buttons (Capsule Styling) */
 .btn-primary {
   background: var(--primary);
   color: #ffffff;
   border: none;
-  padding: 0.6rem 1.1rem;
-  border-radius: var(--radius-md);
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-full);
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  transition: all 0.15s;
+  gap: 0.45rem;
+  transition: all 0.2s var(--apple-spring);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .btn-primary:hover {
   background: var(--primary-hover);
+  box-shadow: 0 4px 12px rgba(0, 113, 227, 0.28);
 }
 
 .btn-secondary {
-  background: #ffffff;
-  color: #334155;
-  border: 1px solid var(--border);
-  padding: 0.6rem 1.1rem;
-  border-radius: var(--radius-md);
+  background: rgba(118, 118, 128, 0.08);
+  color: var(--text-main);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-full);
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  transition: all 0.15s;
+  gap: 0.45rem;
+  transition: all 0.2s var(--apple-spring);
 }
 
 .btn-secondary:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+  background: rgba(118, 118, 128, 0.14);
+  color: #000000;
 }
 
 .btn-danger {
   background: var(--danger-light);
   color: var(--danger);
-  border: 1px solid #fecaca;
-  padding: 0.4rem 0.6rem;
+  border: 1px solid rgba(255, 59, 48, 0.2);
+  padding: 0.4rem 0.7rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
 }
 
 .btn-danger:hover {
-  background: #fee2e2;
+  background: rgba(255, 59, 48, 0.16);
 }
 
 /* Time Gap Divider */
@@ -745,52 +797,63 @@ body:has(input:focus, textarea:focus) .submission-bar,
   align-items: center;
   gap: 0.5rem;
   margin: 0.75rem 0;
-  color: #d97706;
+  color: #c97000;
   font-size: 0.8rem;
   font-weight: 600;
-  background: #fef3c7;
-  padding: 0.25rem 0.6rem;
+  background: rgba(255, 149, 0, 0.1);
+  padding: 0.3rem 0.7rem;
   border-radius: var(--radius-sm);
 }
 
-/* Matching / Palapeli Grid */
+/* Matching / Palapeli Grid (Apple Clean Table) */
 .matching-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   margin-top: 1rem;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .matching-table th {
-  background: #f1f5f9;
+  background: #fbfbfd;
   text-align: left;
   padding: 0.75rem 1rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #475569;
-  border-bottom: 2px solid #cbd5e1;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .matching-table td {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #f0f0f2;
   background: #ffffff;
+  color: var(--text-main);
+  font-size: 0.92rem;
+}
+
+.matching-table tr:last-child td {
+  border-bottom: none;
 }
 
 .matching-table tr:hover td {
-  background: #f8fafc;
+  background: #fbfbfd;
 }
 
 .slot-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.3rem 0.6rem;
-  border-radius: var(--radius-sm);
-  font-weight: 700;
-  font-size: 0.85rem;
-  background: #f1f5f9;
-  color: #1e293b;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: 0.84rem;
+  background: rgba(118, 118, 128, 0.1);
+  color: var(--text-main);
 }
 
 /* Responsive Mobile Viewport Styles (< 768px) */
@@ -816,7 +879,7 @@ body:has(input:focus, textarea:focus) .submission-bar,
 
   .card {
     padding: 1.25rem 1rem;
-    border-radius: var(--radius-md);
+    border-radius: 16px;
     margin-bottom: 1.25rem;
   }
 
@@ -831,6 +894,7 @@ body:has(input:focus, textarea:focus) .submission-bar,
     font-size: 1.35rem;
   }
 
+  .brand-avatar,
   .snoopy-avatar {
     width: 70px;
     height: 70px;
@@ -843,24 +907,45 @@ body:has(input:focus, textarea:focus) .submission-bar,
 
   .submission-bar {
     bottom: 0.75rem;
-    padding: 0.65rem 0.85rem;
+    padding: 0.75rem 1rem;
     flex-direction: column;
-    gap: 0.5rem;
-    border-radius: var(--radius-md);
+    gap: 0.65rem;
+    border-radius: 16px;
   }
 
   .submission-bar .submit-btn,
   .submission-bar .btn-primary {
     width: 100%;
     justify-content: center;
-    padding: 0.65rem 1rem;
-    font-size: 0.92rem;
+    padding: 0.7rem 1rem;
+    font-size: 0.95rem;
   }
 
   .matching-table th,
   .matching-table td {
-    padding: 0.5rem 0.6rem;
+    padding: 0.55rem 0.7rem;
     font-size: 0.82rem;
+  }
+}
+
+/* Apple Reduced Motion & Transparency (Rule #14) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  button:active, .btn-primary:active, .btn-secondary:active, .slot-toggle-btn:active {
+    transform: none !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .app-header, .submission-bar {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 }
 

@@ -623,11 +623,15 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
             className="btn-primary"
             onClick={handleTogglePublish}
             style={{
-              background: event.isPublished ? '#475569' : '#16a34a',
+              background: event.isPublished ? 'rgba(118, 118, 128, 0.16)' : 'var(--success)',
+              color: event.isPublished ? 'var(--text-main)' : '#ffffff',
               border: 'none',
-              fontWeight: 800,
+              fontWeight: 600,
               fontSize: '0.92rem',
-              padding: '0.6rem 1.1rem',
+              padding: '0.65rem 1.35rem',
+              borderRadius: 'var(--radius-full)',
+              boxShadow: event.isPublished ? 'none' : '0 2px 10px rgba(52, 199, 89, 0.3)',
+              transition: 'all 0.2s var(--apple-spring)',
             }}
           >
             {event.isPublished ? (
@@ -647,28 +651,28 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
 
       {/* Overview Status Cards & Progress Bar */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div className="card" style={{ padding: '1.25rem', marginBottom: 0 }}>
+        <div className="card" style={{ padding: '1.25rem', marginBottom: 0, borderRadius: 'var(--radius-lg)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-            <div style={{ background: '#eff6ff', color: '#2563eb', padding: '0.5rem', borderRadius: '10px' }}>
+            <div style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '0.55rem', borderRadius: '12px' }}>
               <Users size={20} />
             </div>
             <div>
-              <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Vastauksia saatu</span>
-              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-subtle)', fontWeight: 600 }}>Vastauksia saatu</span>
+              <div style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
                 {submissions.length} kpl
               </div>
             </div>
           </div>
         </div>
 
-        <div className="card" style={{ padding: '1.25rem', marginBottom: 0 }}>
+        <div className="card" style={{ padding: '1.25rem', marginBottom: 0, borderRadius: 'var(--radius-lg)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-            <div style={{ background: '#f0fdf4', color: '#16a34a', padding: '0.5rem', borderRadius: '10px' }}>
+            <div style={{ background: 'var(--success-light)', color: 'var(--success)', padding: '0.55rem', borderRadius: '12px' }}>
               <CheckCircle size={20} />
             </div>
             <div>
-              <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Aika jaettu</span>
-              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#16a34a' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-subtle)', fontWeight: 600 }}>Aika jaettu</span>
+              <div style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--success)', letterSpacing: '-0.02em' }}>
                 {assignedCount} / {submissions.length} ({progressPercent}%)
               </div>
             </div>
@@ -678,20 +682,20 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
           </div>
         </div>
 
-        <div className="card" style={{ padding: '1.25rem', marginBottom: 0 }}>
+        <div className="card" style={{ padding: '1.25rem', marginBottom: 0, borderRadius: 'var(--radius-lg)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <div style={{
-                background: unassignedSubmissions.length > 0 ? '#fef3c7' : '#f0fdf4',
-                color: unassignedSubmissions.length > 0 ? '#d97706' : '#16a34a',
-                padding: '0.5rem',
-                borderRadius: '10px'
+                background: unassignedSubmissions.length > 0 ? 'var(--warning-light)' : 'var(--success-light)',
+                color: unassignedSubmissions.length > 0 ? 'var(--warning)' : 'var(--success)',
+                padding: '0.55rem',
+                borderRadius: '12px'
               }}>
                 <AlertCircle size={20} />
               </div>
               <div>
-                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Ilman aikaa</span>
-                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: unassignedSubmissions.length > 0 ? '#d97706' : '#16a34a' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-subtle)', fontWeight: 600 }}>Ilman aikaa</span>
+                <div style={{ fontSize: '1.35rem', fontWeight: 700, color: unassignedSubmissions.length > 0 ? 'var(--warning)' : 'var(--success)', letterSpacing: '-0.02em' }}>
                   {unassignedSubmissions.length} oppilasta
                 </div>
               </div>
@@ -700,7 +704,7 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
             {assignedCount > 0 && (
               <button
                 className="select-all-btn"
-                style={{ color: '#ef4444', borderColor: '#fca5a5' }}
+                style={{ color: 'var(--danger)', borderColor: 'rgba(255, 59, 48, 0.3)' }}
                 onClick={handleClearAll}
                 title="Tyhjennä kaikki valinnat"
               >
@@ -717,12 +721,16 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
         {/* Day Filter Bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-subtle)' }}>
               Rajaa päivää:
             </span>
             <button
               className={`select-all-btn ${filterDay === 'ALL' ? 'active' : ''}`}
-              style={{ background: filterDay === 'ALL' ? '#2563eb' : '#fff', color: filterDay === 'ALL' ? '#fff' : '#2563eb' }}
+              style={{
+                background: filterDay === 'ALL' ? 'var(--primary)' : 'rgba(118, 118, 128, 0.08)',
+                color: filterDay === 'ALL' ? '#fff' : 'var(--text-main)',
+                border: 'none',
+              }}
               onClick={() => setFilterDay('ALL')}
             >
               Kaikki päivät ({event.slots.length})
@@ -731,7 +739,11 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
               <button
                 key={day}
                 className={`select-all-btn ${filterDay === day ? 'active' : ''}`}
-                style={{ background: filterDay === day ? '#2563eb' : '#fff', color: filterDay === day ? '#fff' : '#334155' }}
+                style={{
+                  background: filterDay === day ? 'var(--primary)' : 'rgba(118, 118, 128, 0.08)',
+                  color: filterDay === day ? '#fff' : 'var(--text-main)',
+                  border: 'none',
+                }}
                 onClick={() => setFilterDay(day)}
               >
                 {day}

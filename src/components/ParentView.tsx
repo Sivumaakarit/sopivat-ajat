@@ -213,17 +213,17 @@ export const ParentView: React.FC<ParentViewProps> = ({
 
   if (isSubmitted) {
     return (
-      <div className="card" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
-        <div style={{ display: 'inline-flex', background: '#dcfce7', color: '#16a34a', padding: '1rem', borderRadius: '50%', marginBottom: '1rem' }}>
+      <div className="card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem', borderRadius: 'var(--radius-xl)' }}>
+        <div style={{ display: 'inline-flex', background: 'rgba(52, 199, 89, 0.12)', color: 'var(--success)', padding: '1.1rem', borderRadius: '50%', marginBottom: '1.25rem' }}>
           <CheckCircle2 size={48} />
         </div>
-        <h2 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.75rem', color: '#0f172a' }}>
+        <h2 style={{ fontSize: '1.85rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--text-main)', letterSpacing: '-0.025em' }}>
           Kiitos vastauksestasi!
         </h2>
-        <p style={{ color: '#475569', maxWidth: '460px', margin: '0 auto 1.5rem auto', fontSize: '1.05rem', lineHeight: 1.6 }}>
+        <p style={{ color: 'var(--text-muted)', maxWidth: '460px', margin: '0 auto 1.5rem auto', fontSize: '1.05rem', lineHeight: 1.6 }}>
           Toiveesi on tallennettu onnistuneesti oppilaalle <strong>{firstName} {lastNameInitial.toUpperCase()}.</strong>
         </p>
-        <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '2rem' }}>
+        <p style={{ color: 'var(--text-subtle)', fontSize: '0.92rem', marginBottom: '2.25rem' }}>
           {event.teacherName ? `${event.teacherName}-opettaja` : 'Opettaja'} vahvistaa lopullisen arviointikeskusteluajan myöhemmin Wilman kautta.
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -266,12 +266,12 @@ export const ParentView: React.FC<ParentViewProps> = ({
         <div
           className="card"
           style={{
-            background: 'linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%)',
-            border: '2px solid #93c5fd',
+            background: '#ffffff',
+            border: '1px solid rgba(0, 0, 0, 0.08)',
             padding: '1.25rem 1.5rem',
             marginBottom: '1.5rem',
-            borderRadius: '14px',
-            boxShadow: '0 4px 15px rgba(37, 99, 235, 0.08)',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: 'var(--shadow-sm)',
           }}
         >
           <div
@@ -290,12 +290,12 @@ export const ParentView: React.FC<ParentViewProps> = ({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.4rem',
-                  background: '#dbeafe',
-                  color: '#1d4ed8',
-                  padding: '0.25rem 0.65rem',
-                  borderRadius: '6px',
+                  background: 'var(--primary-light)',
+                  color: 'var(--primary)',
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: 'var(--radius-full)',
                   fontSize: '0.78rem',
-                  fontWeight: 800,
+                  fontWeight: 600,
                   textTransform: 'uppercase',
                   letterSpacing: '0.04em',
                   marginBottom: '0.35rem',
@@ -304,10 +304,10 @@ export const ParentView: React.FC<ParentViewProps> = ({
                 <Sparkles size={14} />
                 <span>Vaihe 2 / 4: Huoltajanäkymän esikatselu & jakaminen</span>
               </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.02em', margin: '0 0 4px 0' }}>
                 Jaa tämä lomake huoltajille Wilmassa
               </h3>
-              <p style={{ color: '#475569', fontSize: '0.9rem', margin: 0, maxWidth: '640px' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0, maxWidth: '640px' }}>
                 Alla näet lomakkeen sellaisena kuin huoltajat näkevät sen omalla laitteellaan (ilman tätä opettajan jakolaatikkoa).
               </p>
             </div>
@@ -317,23 +317,24 @@ export const ParentView: React.FC<ParentViewProps> = ({
                 type="button"
                 onClick={() => onNavigate('matching')}
                 style={{
-                  background: '#16a34a',
+                  background: 'var(--success)',
                   color: '#ffffff',
                   border: 'none',
                   padding: '0.65rem 1.35rem',
-                  borderRadius: '10px',
-                  fontWeight: 800,
-                  fontSize: '0.95rem',
+                  borderRadius: 'var(--radius-full)',
+                  fontWeight: 600,
+                  fontSize: '0.92rem',
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.5rem',
-                  boxShadow: '0 3px 10px rgba(22, 163, 74, 0.25)',
+                  boxShadow: '0 2px 8px rgba(52, 199, 89, 0.28)',
+                  transition: 'all 0.2s var(--apple-spring)',
                 }}
                 title="Siirry aikasovitukseen sovittamaan aikoja"
               >
                 <span>Vaihe 3: Siirry aikasovitukseen (palapeli)</span>
-                <ArrowRight size={18} />
+                <ArrowRight size={17} />
               </button>
             )}
           </div>
@@ -393,7 +394,7 @@ export const ParentView: React.FC<ParentViewProps> = ({
                 whiteSpace: 'nowrap',
               }}
             >
-              {copiedLink ? <Check size={16} color="#16a34a" /> : <Copy size={16} />}
+              {copiedLink ? <Check size={16} color="var(--success)" /> : <Copy size={16} />}
               <span>{copiedLink ? 'Linkki kopioitu! ✓' : 'Kopioi linkki'}</span>
             </button>
 
@@ -401,19 +402,20 @@ export const ParentView: React.FC<ParentViewProps> = ({
               type="button"
               onClick={handleCopyWilma}
               style={{
-                background: '#2563eb',
+                background: 'var(--primary)',
                 color: '#ffffff',
                 border: 'none',
-                padding: '0.55rem 1.1rem',
-                borderRadius: '8px',
-                fontWeight: 700,
+                padding: '0.55rem 1.15rem',
+                borderRadius: 'var(--radius-full)',
+                fontWeight: 600,
                 fontSize: '0.85rem',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.45rem',
                 whiteSpace: 'nowrap',
-                boxShadow: '0 2px 6px rgba(37, 99, 235, 0.2)',
+                boxShadow: '0 2px 8px rgba(0, 113, 227, 0.25)',
+                transition: 'all 0.2s var(--apple-spring)',
               }}
             >
               {copiedWilma ? <Check size={16} /> : <MessageSquare size={16} />}
@@ -486,15 +488,16 @@ export const ParentView: React.FC<ParentViewProps> = ({
 
         {/* Student Name GDPR Section */}
         <div style={{
-          background: '#f8fafc',
+          background: 'rgba(255, 255, 255, 0.9)',
           padding: '1.25rem',
-          borderRadius: '12px',
-          border: '1.5px solid #e2e8f0',
-          marginBottom: '1.5rem'
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid rgba(0, 0, 0, 0.08)',
+          marginBottom: '1.5rem',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-            <User size={18} color="#2563eb" />
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b' }}>
+            <User size={18} color="var(--primary)" />
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.015em' }}>
               Oppilaan nimi
             </h3>
           </div>
@@ -658,14 +661,14 @@ export const ParentView: React.FC<ParentViewProps> = ({
               width: '26px',
               height: '26px',
               borderRadius: '50%',
-              background: isMinMet ? '#dcfce7' : '#fee2e2',
-              color: isMinMet ? '#16a34a' : '#ef4444',
-              fontWeight: 800,
+              background: isMinMet ? 'var(--success-light)' : 'var(--danger-light)',
+              color: isMinMet ? 'var(--success)' : 'var(--danger)',
+              fontWeight: 700,
               fontSize: '0.85rem'
             }}>
               {selectedSlotIds.length}
             </span>
-            <span style={{ fontWeight: 700, fontSize: '0.95rem', color: isMinMet ? '#16a34a' : '#1e293b' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.95rem', color: isMinMet ? 'var(--success)' : 'var(--text-main)', letterSpacing: '-0.01em' }}>
               {isMinMet
                 ? `Aikoja valittu ${selectedSlotIds.length} kpl (Minimi ${minRequired} täytetty ✓)`
                 : `Valitse vielä ${minRequired - selectedSlotIds.length} aikaa`}

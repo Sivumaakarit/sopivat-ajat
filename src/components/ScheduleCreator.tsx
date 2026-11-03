@@ -278,7 +278,8 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
           </h3>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+        {/* Row 1: Tapahtuman otsikko & Opettajan nimi */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '0.25rem' }}>
           <div className="form-group">
             <label className="form-label">Tapahtuman otsikko</label>
             <input
@@ -296,6 +297,20 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
               className="form-input"
               value={event.teacherName}
               onChange={e => onUpdateEvent({ ...event, teacherName: e.target.value })}
+            />
+          </div>
+        </div>
+
+        {/* Row 2: Milloin kysely sulkeutuu, Tapaamisen kesto & Minimimäärä */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+          <div className="form-group">
+            <label className="form-label">Milloin kysely sulkeutuu? (Vastausaika päättyy)</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="esim. Perjantaina 6.11. klo 18:00"
+              value={event.deadlineDate || ''}
+              onChange={e => onUpdateEvent({ ...event, deadlineDate: e.target.value })}
             />
           </div>
 
@@ -321,17 +336,6 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
               min={1}
               max={10}
               onChange={e => onUpdateEvent({ ...event, minSelectionsRequired: parseInt(e.target.value, 10) || 3 })}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Milloin kysely sulkeutuu? (Vastausaika päättyy)</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="esim. Perjantaina 6.11. klo 18:00"
-              value={event.deadlineDate || ''}
-              onChange={e => onUpdateEvent({ ...event, deadlineDate: e.target.value })}
             />
           </div>
         </div>

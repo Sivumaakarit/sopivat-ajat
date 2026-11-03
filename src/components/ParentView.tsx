@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { ScheduleEvent, StudentSubmission, ViewMode } from '../types';
 import { groupSlotsByDate } from '../utils/timeUtils';
 import { normalizeInstructions, normalizeImageUrl } from '../services/storage';
@@ -43,29 +43,6 @@ export const ParentView: React.FC<ParentViewProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedWilma, setCopiedWilma] = useState(false);
   const [showGdprModal, setShowGdprModal] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-
-  // Automatically hide floating bar when virtual keyboard opens or input is focused
-  useEffect(() => {
-    const handleFocusIn = (e: FocusEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
-        setIsTyping(true);
-      }
-    };
-    const handleFocusOut = (e: FocusEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
-        setIsTyping(false);
-      }
-    };
-    window.addEventListener('focusin', handleFocusIn);
-    window.addEventListener('focusout', handleFocusOut);
-    return () => {
-      window.removeEventListener('focusin', handleFocusIn);
-      window.removeEventListener('focusout', handleFocusOut);
-    };
-  }, []);
 
   // Check if a submission with this student name already exists
   const existingSubmission = submissions.find(
@@ -514,8 +491,6 @@ export const ParentView: React.FC<ParentViewProps> = ({
                 placeholder="esim. Esko"
                 value={firstName}
                 onChange={e => setFirstName(e.target.value)}
-                onFocus={() => setIsTyping(true)}
-                onBlur={() => setIsTyping(false)}
                 autoComplete="off"
                 required
               />
@@ -533,8 +508,6 @@ export const ParentView: React.FC<ParentViewProps> = ({
                 maxLength={1}
                 value={lastNameInitial}
                 onChange={e => setLastNameInitial(e.target.value.toUpperCase())}
-                onFocus={() => setIsTyping(true)}
-                onBlur={() => setIsTyping(false)}
                 autoComplete="off"
                 required
               />
@@ -650,8 +623,8 @@ export const ParentView: React.FC<ParentViewProps> = ({
         </div>
       </div>
 
-      {/* Sticky Bottom Bar for Submission */}
-      <div className={`submission-bar ${isTyping ? 'hidden-on-input' : ''}`}>
+      {/* Sticky Bottom Bar for Submission - Always visible */}
+      <div className="submission-bar">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{

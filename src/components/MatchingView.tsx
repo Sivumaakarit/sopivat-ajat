@@ -70,17 +70,20 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  // Set of valid student IDs currently present in submissions
+  const validSubmissionIds = new Set(submissions.map(s => s.id));
+
   // Map of student IDs that have been assigned somewhere (studentId -> slotId)
   const assignedStudentMap = new Map<string, string>();
   event.slots.forEach(slot => {
-    if (slot.assignedStudentId) {
+    if (slot.assignedStudentId && validSubmissionIds.has(slot.assignedStudentId)) {
       assignedStudentMap.set(slot.assignedStudentId, slot.id);
     }
   });
 
-  const assignedCount = assignedStudentMap.size;
+  const assignedCount = submissions.filter(sub => assignedStudentMap.has(sub.id)).length;
   const unassignedSubmissions = submissions.filter(sub => !assignedStudentMap.has(sub.id));
-  const progressPercent = submissions.length > 0 ? Math.round((assignedCount / submissions.length) * 100) : 0;
+  const progressPercent = submissions.length > 0 ? Math.min(100, Math.round((assignedCount / submissions.length) * 100)) : 0;
 
   // Selected or hovered student details
   const activeStudent = submissions.find(s => s.id === hoveredStudentId);
@@ -304,16 +307,16 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
       });
     });
 
-    // Target caps per day (in balanced mode)
+    // Target caps per day (in balanced mode: leave the last slot free!)
     const dayCapMap = new Map<string, number>();
     daySlotsMap.forEach((daySlots, dayKey) => {
       const total = daySlots.length;
       if (mode === 'balanced') {
         if (total === 1) dayCapMap.set(dayKey, 1);
         else if (total === 2) dayCapMap.set(dayKey, 2);
-        else if (total === 3) dayCapMap.set(dayKey, 2);
-        else if (total === 4) dayCapMap.set(dayKey, 3);
-        else dayCapMap.set(dayKey, total - 1);
+        else if (total === 3) dayCapMap.set(dayKey, 2); // 2 first, 3rd free!
+        else if (total === 4) dayCapMap.set(dayKey, 3); // 3 first, 4th free!
+        else dayCapMap.set(dayKey, total - 1); // always leaves last slot free!
       } else {
         dayCapMap.set(dayKey, total);
       }
@@ -335,37 +338,39 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
 
       const cap = dayCapMap.get(meta.dayKey) || meta.totalInDay;
 
-      // 1. Starting slot (index 0) preference on empty day:
-      // "Ensisijaisesti siis katso ettei odottelua jää opettajalle eli päivän eka aika täytetään aina jos siihen on varaus."
-      if (currentDayAssignedIndices.length === 0) {
-        if (meta.index === 0) {
-          score += 2500; // Strong bonus to start at day's first slot
+      // 1. Mandatory requirement: ALWAYS start at day's first slot (index 0) without gaps
+      if (meta.index === 0) {
+        // Enormous priority for the very first slot of the day (e.g. 14:00)
+        score += 10000;
+      } else {
+        // If this is a later slot (index > 0):
+        const hasSlotZero = currentDayAssignedIndices.includes(0);
+        if (!hasSlotZero) {
+          // Severely penalize picking later slots when slot 0 is not yet filled!
+          score -= allowGaps ? 1000 : 8000;
         } else {
-          score -= meta.index * 150;
-        }
-      } else {
-        // 2. Contiguity (no gaps between appointments)
-        const combined = [...currentDayAssignedIndices, meta.index].sort((a, b) => a - b);
-        const isContiguous = combined[combined.length - 1] - combined[0] + 1 === combined.length;
-        if (isContiguous) {
-          score += 3500; // Keep appointments strictly consecutive
-        } else if (!allowGaps) {
-          score -= 2000; // Discourage gaps when allowGaps is false
+          // Slot 0 is filled. Reward continuous consecutive block from index 0 onwards!
+          const isImmediateNext = currentDayAssignedIndices.includes(meta.index - 1);
+          if (isImmediateNext) {
+            score += 5000; // Continuous block (0, 1, 2...)
+          } else if (!allowGaps) {
+            score -= 6000; // Penalize gaps between meetings
+          }
         }
       }
 
-      // 3. Daily cap adherence in balanced mode
+      // 2. Daily cap adherence in balanced mode
       if (currentDayAssignedIndices.length < cap) {
-        score += 1500;
+        score += 3000; // Strongly prefer days that haven't reached their cap yet
       } else {
-        score -= 400; // Acceptable if needed to fit all students
+        score -= 4000; // Penalize exceeding cap, reserve for overflow
       }
 
-      // 4. Spread load evenly across days
-      score -= currentDayAssignedIndices.length * 250;
+      // 3. Balance load evenly across days
+      score -= currentDayAssignedIndices.length * 300;
 
-      // 5. Earlier times slightly preferred
-      score -= meta.index * 10;
+      // 4. Earlier times in the day preferred
+      score -= meta.index * 30;
 
       return score;
     };
@@ -454,6 +459,34 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
         }
       }
     }
+
+    // =========================================================================
+    // POST-PROCESSING COMPACTION: GUARANTEE PREFIX FILL FROM 14:00 (INDEX 0)
+    // Shifts any appointment forward to earlier free slots on the same day if the student wished for it!
+    // =========================================================================
+    daySlotsMap.forEach(daySlots => {
+      for (let i = 0; i < daySlots.length; i++) {
+        const targetSlot = daySlots[i];
+        if (slotMatch.has(targetSlot.id)) continue; // Slot i is already filled
+
+        // targetSlot (index i) is FREE! Can any later slot j > i on the same day shift forward?
+        for (let j = i + 1; j < daySlots.length; j++) {
+          const laterSlot = daySlots[j];
+          if (!slotMatch.has(laterSlot.id)) continue;
+
+          const occupantId = slotMatch.get(laterSlot.id)!;
+          const occupantStudent = submissions.find(s => s.id === occupantId);
+
+          if (occupantStudent && occupantStudent.selectedSlotIds.includes(targetSlot.id)) {
+            // Occupant also wished for the earlier slot! Shift them forward into targetSlot!
+            slotMatch.delete(laterSlot.id);
+            slotMatch.set(targetSlot.id, occupantId);
+            studentMatch.set(occupantId, targetSlot.id);
+            break; // targetSlot is now filled, move to next i
+          }
+        }
+      }
+    });
 
     // Apply the matched assignments
     let assignedNow = 0;

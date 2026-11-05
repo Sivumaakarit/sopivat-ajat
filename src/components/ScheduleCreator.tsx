@@ -129,6 +129,22 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
   // Input for the next slot (user can freely type 17:00 or any time)
   const [startTimeInput, setStartTimeInput] = useState('13:15');
 
+  // Local string states for smooth numeric input typing (allows backspacing & arbitrary numbers like 3, 7, 24)
+  const [durationInput, setDurationInput] = useState<string>(() => String(event.slotDurationMinutes || 20));
+  const [minSelectionsInput, setMinSelectionsInput] = useState<string>(() => String(event.minSelectionsRequired || 3));
+
+  React.useEffect(() => {
+    if (event.slotDurationMinutes && String(event.slotDurationMinutes) !== durationInput && durationInput !== '') {
+      setDurationInput(String(event.slotDurationMinutes));
+    }
+  }, [event.slotDurationMinutes]);
+
+  React.useEffect(() => {
+    if (event.minSelectionsRequired && String(event.minSelectionsRequired) !== minSelectionsInput && minSelectionsInput !== '') {
+      setMinSelectionsInput(String(event.minSelectionsRequired));
+    }
+  }, [event.minSelectionsRequired]);
+
   // Break notifications state (popup toast + inline bubble)
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [breakBubble, setBreakBubble] = useState<string | null>(null);
@@ -558,12 +574,31 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
               </label>
               <input
                 type="number"
+                inputMode="numeric"
                 className="form-input"
-                value={event.slotDurationMinutes}
-                min={5}
-                max={120}
-                step={5}
-                onChange={e => onUpdateEvent({ ...event, slotDurationMinutes: parseInt(e.target.value, 10) || 20 })}
+                value={durationInput}
+                min={1}
+                max={240}
+                step={1}
+                placeholder="20"
+                onChange={e => {
+                  const val = e.target.value;
+                  setDurationInput(val);
+                  if (val === '') return;
+                  const parsed = parseInt(val, 10);
+                  if (!isNaN(parsed) && parsed > 0) {
+                    onUpdateEvent({ ...event, slotDurationMinutes: parsed });
+                  }
+                }}
+                onBlur={() => {
+                  const parsed = parseInt(durationInput, 10);
+                  if (isNaN(parsed) || parsed < 1) {
+                    setDurationInput('20');
+                    onUpdateEvent({ ...event, slotDurationMinutes: 20 });
+                  } else {
+                    setDurationInput(String(parsed));
+                  }
+                }}
               />
             </div>
 
@@ -574,11 +609,31 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
               </label>
               <input
                 type="number"
+                inputMode="numeric"
                 className="form-input"
-                value={event.minSelectionsRequired}
+                value={minSelectionsInput}
                 min={1}
-                max={10}
-                onChange={e => onUpdateEvent({ ...event, minSelectionsRequired: parseInt(e.target.value, 10) || 3 })}
+                max={50}
+                step={1}
+                placeholder="3"
+                onChange={e => {
+                  const val = e.target.value;
+                  setMinSelectionsInput(val);
+                  if (val === '') return;
+                  const parsed = parseInt(val, 10);
+                  if (!isNaN(parsed) && parsed > 0) {
+                    onUpdateEvent({ ...event, minSelectionsRequired: parsed });
+                  }
+                }}
+                onBlur={() => {
+                  const parsed = parseInt(minSelectionsInput, 10);
+                  if (isNaN(parsed) || parsed < 1) {
+                    setMinSelectionsInput('3');
+                    onUpdateEvent({ ...event, minSelectionsRequired: 3 });
+                  } else {
+                    setMinSelectionsInput(String(parsed));
+                  }
+                }}
               />
             </div>
           </div>

@@ -23,6 +23,8 @@ import {
   Key,
   Share2,
   Globe,
+  ShieldCheck,
+  MessageSquare,
 } from 'lucide-react';
 
 interface MatchingViewProps {
@@ -591,6 +593,48 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
     setTimeout(() => setCopiedWilma(false), 3000);
   };
 
+  const [copiedStudentId, setCopiedStudentId] = useState<string | null>(null);
+
+  const getPersonalWilmaMessage = (student: StudentSubmission, slot: TimeSlot): string => {
+    const firstName = student.firstName.trim();
+    const dateStr = slot.dateLabel || slot.date;
+    const teacher = event.teacherName?.trim() || 'Opettaja';
+
+    return `Hei ${firstName}n huoltajat!\n\nArviointikeskusteluaikanne on vahvistettu:\n📅 ${dateStr} klo ${slot.startTime}–${slot.endTime}\n📍 Tapaaminen järjestetään luokassamme.\n\nTervetuloa yhteiseen keskusteluun!\n\nYstävällisin terveisin,\n${teacher}`;
+  };
+
+  const handleCopyStudentWilma = (student: StudentSubmission, slot: TimeSlot) => {
+    const msg = getPersonalWilmaMessage(student, slot);
+    navigator.clipboard.writeText(msg);
+    setCopiedStudentId(student.id);
+    showToast(`📋 Wilma-viesti oppilaalle ${student.firstName} kopioitu!`);
+    setTimeout(() => {
+      setCopiedStudentId(prev => (prev === student.id ? null : prev));
+    }, 2500);
+  };
+
+  const handleCopyAllIndividualMessages = () => {
+    const assignedPairs = event.slots
+      .filter(slot => slot.assignedStudentId)
+      .map(slot => {
+        const student = submissions.find(s => s.id === slot.assignedStudentId);
+        return student ? { student, slot } : null;
+      })
+      .filter(Boolean) as { student: StudentSubmission; slot: TimeSlot }[];
+
+    if (assignedPairs.length === 0) {
+      showToast('Ei vielä sovittuja aikoja kopioitavaksi.');
+      return;
+    }
+
+    const allText = assignedPairs
+      .map(p => `==============================\n${getPersonalWilmaMessage(p.student, p.slot)}`)
+      .join('\n\n');
+
+    navigator.clipboard.writeText(allText);
+    showToast(`Kaikki ${assignedPairs.length} henkilökohtaista Wilma-viestiä kopioitu leikepöydälle!`);
+  };
+
   // Handle manual submission add
   const handleSaveManual = () => {
     if (!manualFirst.trim() || !manualInitial.trim()) {
@@ -916,6 +960,138 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* GDPR-Safe Individual Wilma Confirmation Messenger Section */}
+      {assignedCount > 0 && (
+        <div
+          className="card"
+          style={{
+            background: '#ffffff',
+            border: '2px solid #bbf7d0',
+            borderRadius: 'var(--radius-lg)',
+            padding: '1.25rem 1.5rem',
+            marginBottom: '1.5rem',
+            boxShadow: 'var(--shadow-sm)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+              <div style={{ background: '#dcfce7', color: '#16a34a', padding: '0.6rem', borderRadius: '12px', flexShrink: 0 }}>
+                <ShieldCheck size={24} />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                    Kopioi henkilökohtaiset Wilma-vahvistukset perheille
+                  </h3>
+                  <span style={{
+                    background: '#f0fdf4',
+                    color: '#15803d',
+                    border: '1px solid #86efac',
+                    borderRadius: '6px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.03em',
+                  }}>
+                    100 % GDPR-turvallinen
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.88rem', color: '#475569', margin: 0, maxWidth: '780px', lineHeight: 1.5 }}>
+                  Oppilaiden aikoja ei tule julkaista julkiseen verkkolinkkiin. Vahvista sovittu aika kullekin perheelle suoraan Wilmassa:
+                  klikkaa alta oppilaan kohdalta <strong>”Kopioi Wilma-viesti”</strong>, liitä Wilmaan ja lähetä perheelle!
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleCopyAllIndividualMessages}
+              style={{ fontSize: '0.84rem', padding: '0.55rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              title="Kopioi kaikkien oppilaiden henkilökohtaiset viestit kerralla leikepöydälle"
+            >
+              <Copy size={15} />
+              <span>Kopioi kaikkien viestit listana</span>
+            </button>
+          </div>
+
+          {/* Individual Student Rows */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.75rem' }}>
+            {sortSlotsChronologically(event.slots.filter(s => s.assignedStudentId)).map(slot => {
+              const student = submissions.find(s => s.id === slot.assignedStudentId);
+              if (!student) return null;
+              const isCopied = copiedStudentId === student.id;
+              const displayName = getStudentDisplayName(student, submissions);
+
+              return (
+                <div
+                  key={student.id}
+                  style={{
+                    background: isCopied ? '#f0fdf4' : '#f8fafc',
+                    border: `1.5px solid ${isCopied ? '#86efac' : '#e2e8f0'}`,
+                    borderRadius: '10px',
+                    padding: '0.75rem 1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.98rem', color: '#0f172a', minWidth: '120px' }}>
+                      {displayName}
+                    </span>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
+                      padding: '3px 10px',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      color: '#1e293b',
+                    }}>
+                      <Clock size={13} color="var(--primary)" />
+                      <span>{slot.dateLabel || slot.date} klo {slot.startTime}–{slot.endTime}</span>
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    style={{
+                      background: isCopied ? '#16a34a' : 'var(--primary)',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '0.5rem 1.15rem',
+                      borderRadius: 'var(--radius-full)',
+                      fontSize: '0.86rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: isCopied ? '0 2px 6px rgba(22, 163, 74, 0.3)' : '0 2px 6px rgba(0, 113, 227, 0.25)',
+                      transition: 'all 0.2s var(--apple-spring)',
+                    }}
+                    onClick={() => handleCopyStudentWilma(student, slot)}
+                    title={`Kopioi valmis Wilma-viesti oppilaan ${student.firstName} huoltajille`}
+                  >
+                    {isCopied ? <Check size={15} /> : <MessageSquare size={15} />}
+                    <span>{isCopied ? 'Viesti kopioitu! ✓' : `Kopioi Wilma-viesti (${student.firstName})`}</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Smart Unassigned Assistant Banner */}
       {unassignedSubmissions.length > 0 && (
@@ -1345,6 +1521,43 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
                           >
                             <Check size={13} />
                             <span>Lukitse {soleUnassignedCandidate.firstName}</span>
+                          </button>
+                        )}
+
+                        {/* Direct 1-click personal Wilma copy button */}
+                        {isAssigned && assignedStudent && (
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            style={{
+                              fontSize: '0.78rem',
+                              padding: '5px 9px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              borderRadius: '6px',
+                              background: copiedStudentId === assignedStudent.id ? '#dcfce7' : '#ffffff',
+                              borderColor: copiedStudentId === assignedStudent.id ? '#86efac' : '#cbd5e1',
+                              color: copiedStudentId === assignedStudent.id ? '#15803d' : '#1e293b',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                              whiteSpace: 'nowrap',
+                            }}
+                            onClick={() => handleCopyStudentWilma(assignedStudent, slot)}
+                            title={`Kopioi valmis Wilma-vahvistusviesti oppilaalle ${assignedStudent.firstName}`}
+                          >
+                            {copiedStudentId === assignedStudent.id ? (
+                              <>
+                                <Check size={12} color="#16a34a" />
+                                <span>Kopioitu! ✓</span>
+                              </>
+                            ) : (
+                              <>
+                                <MessageSquare size={12} color="var(--primary)" />
+                                <span>Kopioi Wilma</span>
+                              </>
+                            )}
                           </button>
                         )}
                       </div>

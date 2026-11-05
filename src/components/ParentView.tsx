@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ScheduleEvent, StudentSubmission, ViewMode } from '../types';
 import { groupSlotsByDate } from '../utils/timeUtils';
 import { normalizeInstructions, normalizeImageUrl } from '../services/storage';
@@ -43,6 +43,39 @@ export const ParentView: React.FC<ParentViewProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedWilma, setCopiedWilma] = useState(false);
   const [showGdprModal, setShowGdprModal] = useState(false);
+  const [isBarVisible, setIsBarVisible] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // 1. Jos aikoja on valittu tai oppilaan nimi kirjoitettu, pidetään palkki aina näkyvissä
+      if (selectedSlotIds.length > 0 || firstName.trim().length > 0 || lastNameInitial.trim().length > 0) {
+        setIsBarVisible(true);
+        return;
+      }
+
+      // 2. Jos sivu ei ole lainkaan rullattavissa (esim. valtava näyttö), näytetään palkki
+      const isScrollable = document.documentElement.scrollHeight > window.innerHeight + 80;
+      if (!isScrollable) {
+        setIsBarVisible(true);
+        return;
+      }
+
+      // 3. Rullattavalla sivulla (erityisesti mobiilissa): piilotetaan aivan ylhäällä,
+      // jotta huoltaja saa rauhassa lukea alkutekstin ilman peittävää palkkia.
+      // Ilmestyy pehmeästi kun liu'utetaan alaspäin kohti nimeä ja aikoja.
+      const scrollY = window.scrollY || document.documentElement.scrollTop;
+      setIsBarVisible(scrollY > 100);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [selectedSlotIds.length, firstName, lastNameInitial]);
 
   // Check if a submission with this student name already exists
   const existingSubmission = submissions.find(
@@ -643,8 +676,8 @@ export const ParentView: React.FC<ParentViewProps> = ({
         </div>
       </div>
 
-      {/* Sticky Bottom Bar for Submission - Always visible */}
-      <div className="submission-bar">
+      {/* Sticky Bottom Bar for Submission - Hidden at top on mobile, reveals on scroll or interaction */}
+      <div className={`submission-bar ${!isBarVisible ? 'hidden-bar' : ''}`}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{

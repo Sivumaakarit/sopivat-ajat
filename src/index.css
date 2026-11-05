@@ -733,7 +733,7 @@ button:active:not(:disabled),
   color: var(--primary);
 }
 
-/* Floating / Sticky Submission Bar (Apple Frosted Glass) - ALWAYS visible */
+/* Floating / Sticky Submission Bar (Apple Frosted Glass) */
 .submission-bar {
   position: sticky;
   bottom: 1.5rem;
@@ -749,7 +749,18 @@ button:active:not(:disabled),
   justify-content: space-between;
   gap: 1rem;
   z-index: 60;
-  transition: opacity 0.2s var(--apple-spring), transform 0.2s var(--apple-spring);
+  transform: translateY(0);
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.32s;
+  will-change: transform, opacity;
+}
+
+.submission-bar.hidden-bar {
+  opacity: 0;
+  transform: translateY(140%);
+  visibility: hidden;
+  pointer-events: none;
 }
 
 @media (max-width: 640px) {

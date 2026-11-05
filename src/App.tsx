@@ -261,6 +261,10 @@ export function App() {
             submissions={submissions}
             isPreview={!isParentMode}
             onNavigate={setCurrentView}
+            onEventUpdated={updated => {
+              setEvent(updated);
+              saveEvent(updated);
+            }}
           />
         )}
       </main>

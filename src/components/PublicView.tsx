@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { ScheduleEvent, StudentSubmission, ViewMode } from '../types';
 import { getStudentDisplayName, sortSlotsChronologically } from '../utils/timeUtils';
-import { normalizeImageUrl } from '../services/storage';
+import { normalizeImageUrl, DEFAULT_PUBLISHED_INSTRUCTIONS, saveEvent } from '../services/storage';
 import {
   Search,
   Calendar,
@@ -23,6 +23,7 @@ interface PublicViewProps {
   submissions: StudentSubmission[];
   isPreview?: boolean;
   onNavigate?: (view: ViewMode) => void;
+  onEventUpdated?: (event: ScheduleEvent) => void;
 }
 
 export const PublicView: React.FC<PublicViewProps> = ({
@@ -30,11 +31,16 @@ export const PublicView: React.FC<PublicViewProps> = ({
   submissions,
   isPreview,
   onNavigate,
+  onEventUpdated,
 }) => {
   const [searchName, setSearchName] = useState('');
   const [filterDay, setFilterDay] = useState<string>('ALL');
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedWilma, setCopiedWilma] = useState(false);
+  const [isEditingInstructions, setIsEditingInstructions] = useState(false);
+  const [editedInstructions, setEditedInstructions] = useState(
+    event.publishedInstructions || DEFAULT_PUBLISHED_INSTRUCTIONS
+  );
 
   const shareUrl = `${window.location.origin}${window.location.pathname}?e=${encodeURIComponent(event.id)}`;
 
@@ -45,7 +51,8 @@ export const PublicView: React.FC<PublicViewProps> = ({
   };
 
   const handleCopyWilma = () => {
-    const wilmaMsg = `Hei huoltajat!\n\nLuokan arviointikeskustelujen aikataulu on nyt valmis ja vahvistettu!\n\nNäette oman perheenne vahvistetun ajan alla olevasta linkistä:\n${shareUrl}\n\nAikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, tai tulee muita muutostarpeita, laittakaa siitä lyhyt viesti opettajalle Wilmassa.\n\nTervetuloa tapaamiseen omassa luokassamme sovittuna aikana!\n\nYstävällisin terveisin,\n${event.teacherName?.trim() || 'Opettaja'}`;
+    const swapNote = event.publishedInstructions?.trim() || DEFAULT_PUBLISHED_INSTRUCTIONS;
+    const wilmaMsg = `Hei huoltajat!\n\nLuokan arviointikeskustelujen aikataulu on nyt valmis ja vahvistettu!\n\nNäette oman perheenne vahvistetun ajan alla olevasta linkistä:\n${shareUrl}\n\n${swapNote}\n\nTervetuloa tapaamiseen omassa luokassamme sovittuna aikana!\n\nYstävällisin terveisin,\n${event.teacherName?.trim() || 'Opettaja'}`;
 
     navigator.clipboard.writeText(wilmaMsg);
     setCopiedWilma(true);
@@ -425,7 +432,7 @@ export const PublicView: React.FC<PublicViewProps> = ({
         </div>
       )}
 
-      {/* 4. Warm Swapping Note (Requested by user in Audio 1) */}
+      {/* 4. Warm Swapping Note */}
       <div
         className="card"
         style={{
@@ -447,13 +454,65 @@ export const PublicView: React.FC<PublicViewProps> = ({
           >
             <ArrowLeftRight size={20} />
           </div>
-          <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1e293b', margin: '0 0 0.4rem 0' }}>
-              Tuli esteitä tai toive vaihtaa päittäin?
-            </h3>
-            <p style={{ color: '#475569', fontSize: '0.92rem', lineHeight: 1.6, margin: 0 }}>
-              Aikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, tai tulee muita muutostarpeita, laittakaa siitä lyhyt viesti opettajalle Wilmassa.
-            </p>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.4rem' }}>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>
+                Tuli esteitä tai toive vaihtaa päittäin?
+              </h3>
+              {isPreview && !isEditingInstructions && (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => {
+                    setEditedInstructions(event.publishedInstructions || DEFAULT_PUBLISHED_INSTRUCTIONS);
+                    setIsEditingInstructions(true);
+                  }}
+                  style={{ fontSize: '0.78rem', padding: '0.25rem 0.65rem' }}
+                  title="Muokkaa tätä huoltajille näkyvää ohjetekstiä"
+                >
+                  ✏️ Muokkaa tekstiä
+                </button>
+              )}
+            </div>
+
+            {isPreview && isEditingInstructions ? (
+              <div style={{ marginTop: '0.5rem' }}>
+                <textarea
+                  className="form-textarea"
+                  rows={3}
+                  value={editedInstructions}
+                  onChange={e => setEditedInstructions(e.target.value)}
+                  style={{ fontSize: '0.9rem', lineHeight: 1.5, marginBottom: '0.5rem', background: '#ffffff' }}
+                />
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    style={{ fontSize: '0.82rem', padding: '0.4rem 0.85rem' }}
+                    onClick={() => {
+                      const updated = { ...event, publishedInstructions: editedInstructions };
+                      saveEvent(updated);
+                      if (onEventUpdated) onEventUpdated(updated);
+                      setIsEditingInstructions(false);
+                    }}
+                  >
+                    Tallenna muutos
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ fontSize: '0.82rem', padding: '0.4rem 0.85rem' }}
+                    onClick={() => setIsEditingInstructions(false)}
+                  >
+                    Peruuta
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p style={{ color: '#475569', fontSize: '0.92rem', lineHeight: 1.6, margin: 0 }}>
+                {event.publishedInstructions || DEFAULT_PUBLISHED_INSTRUCTIONS}
+              </p>
+            )}
           </div>
         </div>
       </div>

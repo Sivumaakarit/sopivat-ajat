@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { ScheduleEvent, StudentSubmission, ViewMode, TimeSlot } from '../types';
 import { getStudentDisplayName, sortSlotsChronologically } from '../utils/timeUtils';
-import { assignStudentToSlot, saveEvent, addSubmission, createNewOfficialEvent } from '../services/storage';
+import { assignStudentToSlot, saveEvent, addSubmission, createNewOfficialEvent, DEFAULT_PUBLISHED_INSTRUCTIONS } from '../services/storage';
 import confetti from 'canvas-confetti';
 import {
   CheckCircle,
@@ -578,7 +578,8 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
 
     let text = '';
     if (event.isPublished) {
-      text = `Hei huoltajat!\n\nLuokan arviointikeskustelujen aikataulu on nyt valmis ja vahvistettu!\n\nNäette oman perheenne vahvistetun ajan alla olevasta linkistä:\n${shareUrl}\n\nAikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, tai tulee muita muutostarpeita, laittakaa siitä lyhyt viesti opettajalle Wilmassa.\n\nTervetuloa tapaamiseen omassa luokassamme sovittuna aikana!\n\nYstävällisin terveisin,\n${event.teacherName?.trim() || 'Opettaja'}`;
+      const swapNote = event.publishedInstructions?.trim() || DEFAULT_PUBLISHED_INSTRUCTIONS;
+      text = `Hei huoltajat!\n\nLuokan arviointikeskustelujen aikataulu on nyt valmis ja vahvistettu!\n\nNäette oman perheenne vahvistetun ajan alla olevasta linkistä:\n${shareUrl}\n\n${swapNote}\n\nTervetuloa tapaamiseen omassa luokassamme sovittuna aikana!\n\nYstävällisin terveisin,\n${event.teacherName?.trim() || 'Opettaja'}`;
     } else {
       const deadlineNote = event.deadlineDate ? `\n\nVastausaika päättyy: ${event.deadlineDate}.` : '';
       text = `Hei huoltajat!\n\nOn aika valita sopivat ajat lukuvuoden arviointikeskusteluille. Yhteiseen keskusteluun osallistuvat oppilas, opettaja ja kodin edustaja(t).\n\nKäykää valitsemassa teille sopivat ajat alla olevasta linkistä:\n${shareUrl}\n\nValitkaa yhteensä vähintään ${event.minSelectionsRequired || 3} teille sopivaa vaihtoehtoa.${deadlineNote}\n\nYstävällisin terveisin,\n${event.teacherName || 'Esko'}`;
@@ -797,6 +798,36 @@ export const MatchingView: React.FC<MatchingViewProps> = ({
               </>
             )}
           </button>
+        </div>
+
+        {/* Ohje huoltajille julkaistussa aikataulussa (Tuli esteitä tai toive vaihtaa päittäin?) */}
+        <div style={{
+          marginTop: '1.25rem',
+          paddingTop: '1.15rem',
+          borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+          width: '100%',
+        }}>
+          <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.25rem', marginBottom: '0.45rem' }}>
+            <span style={{ fontWeight: 700, color: 'var(--text-main)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <ArrowLeftRight size={16} color="var(--primary)" />
+              <span>Ohjeteksti julkaisussa (Tuli esteitä tai toive vaihtaa päittäin?)</span>
+            </span>
+            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
+              (Näkyy huoltajille vahvistetun aikataulun yhteydessä)
+            </span>
+          </label>
+          <textarea
+            className="form-textarea"
+            rows={3}
+            value={event.publishedInstructions ?? DEFAULT_PUBLISHED_INSTRUCTIONS}
+            onChange={e => {
+              const updated = { ...event, publishedInstructions: e.target.value };
+              saveEvent(updated);
+              onEventUpdated(updated);
+            }}
+            placeholder="Kirjoita ohje aikojen vaihtamisesta..."
+            style={{ fontSize: '0.88rem', lineHeight: 1.5, background: '#ffffff' }}
+          />
         </div>
       </div>
 

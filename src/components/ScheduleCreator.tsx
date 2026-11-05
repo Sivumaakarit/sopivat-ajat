@@ -23,7 +23,9 @@ import {
   CheckCircle2,
   Lock,
   Unlock,
+  ArrowLeftRight,
 } from 'lucide-react';
+import { DEFAULT_PUBLISHED_INSTRUCTIONS } from '../services/storage';
 
 interface ScheduleCreatorProps {
   event: ScheduleEvent;
@@ -648,6 +650,23 @@ export const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({
             rows={4}
             value={event.instructions}
             onChange={e => onUpdateEvent({ ...event, instructions: e.target.value })}
+          />
+        </div>
+
+        <div className="form-group" style={{ marginTop: '1.25rem', marginBottom: 0 }}>
+          <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.25rem' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <ArrowLeftRight size={14} color="var(--primary)" />
+              <span>Ohje aikojen vaihtoon julkaistussa aikataulussa</span>
+            </span>
+            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>(Tuli esteitä tai toive vaihtaa päittäin?)</span>
+          </label>
+          <textarea
+            className="form-textarea"
+            rows={3}
+            value={event.publishedInstructions ?? DEFAULT_PUBLISHED_INSTRUCTIONS}
+            onChange={e => onUpdateEvent({ ...event, publishedInstructions: e.target.value })}
+            placeholder="Kirjoita ohje aikojen vaihtamisesta..."
           />
         </div>
       </div>

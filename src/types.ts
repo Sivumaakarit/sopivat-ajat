@@ -21,6 +21,7 @@ export interface ScheduleEvent {
   slots: TimeSlot[];
   isLocked: boolean;
   isPublished?: boolean;
+  publishedInstructions?: string;
 }
 
 export interface StudentSubmission {

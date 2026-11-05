@@ -7,6 +7,11 @@ export const SOPIVAT_AJAT_LOGO = '/logo.svg';
 // Alias for backwards compatibility
 export const SNOOPY_ILLUSTRATION = SOPIVAT_AJAT_LOGO;
 
+export const DEFAULT_PUBLISHED_INSTRUCTIONS =
+  'Aikatauluja saa tarpeen tullen vielä vaihtaa keskenään, eli voitte vapaasti sopia toisen perheen kanssa aikojen vaihtamisesta päittäin. Jos olette sopineet vaihdosta, tai tulee muita muutostarpeita, laittakaa siitä lyhyt viesti opettajalle Wilmassa.';
+
+export const INSTRUCTIONS_DELIMITER = '\n---PUBLISHED_INSTRUCTIONS---\n';
+
 export function normalizeImageUrl(imageUrl?: string): string {
   // If missing, or if it points to the deprecated Snoopy drawing, migrate to the official Sopivat ajat logo
   if (!imageUrl || imageUrl.includes('snoopy') || imageUrl.includes('L40 160') || imageUrl.includes('data:image/svg+xml')) {
@@ -29,6 +34,7 @@ export const INITIAL_EVENT: ScheduleEvent = {
   teacherName: '',
   isLocked: false,
   isPublished: false,
+  publishedInstructions: DEFAULT_PUBLISHED_INSTRUCTIONS,
   slots: [],
 };
 
@@ -97,6 +103,9 @@ export function getEvent(): ScheduleEvent {
     if (parsed.instructions) {
       parsed.instructions = normalizeInstructions(parsed.instructions);
     }
+    if (!parsed.publishedInstructions) {
+      parsed.publishedInstructions = DEFAULT_PUBLISHED_INSTRUCTIONS;
+    }
     return parsed;
   } catch {
     return INITIAL_EVENT;
@@ -126,6 +135,8 @@ export function saveEvent(event: ScheduleEvent): void {
 export async function saveEventToCloud(event: ScheduleEvent): Promise<boolean> {
   const sortedSlots = sortSlotsChronologically(event.slots || []);
   const normalizedInstructions = normalizeInstructions(event.instructions || '');
+  const publishedInst = event.publishedInstructions?.trim() || DEFAULT_PUBLISHED_INSTRUCTIONS;
+  const combinedInstructions = `${normalizedInstructions}${INSTRUCTIONS_DELIMITER}${publishedInst}`;
   const normalizedImg = normalizeImageUrl(event.imageUrl);
   const deadlineValue = (event.isPublished ? 'PUBLISHED::' : '') + (event.deadlineDate || '');
 
@@ -134,7 +145,7 @@ export async function saveEventToCloud(event: ScheduleEvent): Promise<boolean> {
       id: event.id,
       admin_token: event.adminToken,
       title: event.title,
-      instructions: normalizedInstructions,
+      instructions: combinedInstructions,
       image_url: normalizedImg,
       slot_duration_minutes: event.slotDurationMinutes,
       min_selections_required: event.minSelectionsRequired,
@@ -170,11 +181,20 @@ export async function fetchEventFromCloud(id: string): Promise<ScheduleEvent | n
     const isPublished = rawDeadline.startsWith('PUBLISHED::');
     const deadlineDate = rawDeadline.replace('PUBLISHED::', '');
 
+    let rawInstructions = data.instructions || '';
+    let publishedInstructions = DEFAULT_PUBLISHED_INSTRUCTIONS;
+    if (rawInstructions.includes(INSTRUCTIONS_DELIMITER)) {
+      const parts = rawInstructions.split(INSTRUCTIONS_DELIMITER);
+      rawInstructions = parts[0];
+      publishedInstructions = parts[1]?.trim() || DEFAULT_PUBLISHED_INSTRUCTIONS;
+    }
+
     return {
       id: data.id,
       adminToken: data.admin_token || '',
       title: data.title,
-      instructions: normalizeInstructions(data.instructions || ''),
+      instructions: normalizeInstructions(rawInstructions),
+      publishedInstructions: publishedInstructions,
       imageUrl: normalizeImageUrl(data.image_url),
       slotDurationMinutes: data.slot_duration_minutes || 20,
       minSelectionsRequired: data.min_selections_required || 3,

@@ -1,6 +1,6 @@
 # 📌 Sopivat ajat – Master-spesifikaatio & arkkitehtuuridokumentti
-*Versio: 1.5.0 | Päivitetty: 24.10.2026*  
-*Tila: Kehitys lokaalissa + Supabase Pilvitietokanta kytketty*  
+*Versio: 2.1.0 | Päivitetty: 10.11.2026*  
+*Tila: Tuotannossa (Production Live) + Supabase Pilvitietokanta + Vercel Deployment*  
 *🌐 Live URL:* [https://sopivat-ajat.vercel.app](https://sopivat-ajat.vercel.app)  
 *📦 GitHub:* [https://github.com/Sivumaakarit/sopivat-ajat](https://github.com/Sivumaakarit/sopivat-ajat)  
 
@@ -10,17 +10,29 @@
 
 **"Sopivat ajat"** on moderni, visuaalisesti ensiluokkainen ja kognitiivista kuormitusta radikaalisti vähentävä verkkotyökalu koulujen arviointikeskustelujen ja yleisten tapaamisaikojen keräämiseen, sovitteluun ja vahvistamiseen.
 
-### Keskeiset uusimmat ominaisuudet (v1.5.0):
+### Keskeiset uusimmat ominaisuudet (v2.1.0):
+* **100 % GDPR-turvalliset henkilökohtaiset Wilma-vahvistukset (Henkilökohtainen viestintä):**
+  - Koulujen, kuntien ja tietosuojavaltuutetun linjauksen mukaisesti luokan oppilaiden nimiä ja keskusteluaikoja ei julkaista julkiseen verkkolinkkiin.
+  - Sovelluksessa on suora **"Kopioi henkilökohtaiset Wilma-vahvistukset perheille"** -työkalu: jokaisen oppilaan (esim. *Eetu K.*) kohdalla on `[ 📋 Kopioi Wilma-viesti ]` -painike, joka kopioi leikepöydälle suoraan kyseisen perheen oman vahvistetun ajan ja tervehdyksen. Opettaja voi myös kopioida kaikkien viestit kerralla listana.
+* **Mobiilin lähetyspalkin älykäs esiintulo (Smart On-Scroll Reveal):**
+  - Sivulle saavuttaessa kelluva alapalkki on piilossa ruudun alareunan alapuolella, jotta huoltaja saa rauhassa lukea opettajan saatesanat ja määräajan ilman peittäviä elementtejä tai ennenaikaisia varoituksia.
+  - Palkki liukuu pehmeästi esiin (Apple spring -animaatiolla) heti kun sivua liu'utetaan alaspäin kohti nimeä ja aikavalintoja, tai kun aikoja valitaan.
+* **Vapaa numeronäppäinsyöttö (Kesto & Minimimäärä):**
+  - Poistettu selaimen pakotetut 5 minuutin askellukset (`step=5, min=5`) ja input-arvojen takaisinhypyt. Tapaamisen keston (esim. 3, 7, 24 min) ja minimimäärän (1, 2, 7 jne.) voi näpytellä suoraan numeronäppäimillä ilman estelyä.
+* **Julkaistun vaihto-ohjetekstin muokattavuus:**
+  - Oletusteksti siistitty neutraaliksi (*"Aikatauluja saa tarpeen tullen vielä vaihtaa keskenään..."* ilman kovia nimiä tai hymiöitä). Tekstiä pääsee muokkaamaan suoraan viimeisessä vaiheessa ennen julkaisua (Aikasovitus), julkaistun aikataulun esikatselussa ("✏️ Muokkaa tekstiä") sekä luontiasetuksissa.
+* **Rinnakkaisluokkien saumaton tuki:**
+  - Puhdas URL `https://sopivat-ajat.vercel.app` luo jokaiselle avaavalle opettajalle puhtaan, oman luokkatunnisteen. Eri luokkien tiedot eivät sekoitu keskenään.
 * **Supabase Pilvitietokanta & Reaaliaikasynkronointi (Realtime Sync):**
   - Opettajan luomat ajat ja asetukset tallentuvat suoraan Supabase PostgreSQL -tietokantaan (`events` ja `submissions`).
   - Kun huoltaja vastaa puhelimellaan jakolinkin kautta (`?e=[eventId]`), vastaus tallentuu pilveen ja ilmestyy välittömästi opettajan tietokoneen näytölle ilman sivun uudelleenlatausta.
 * **Häiriötön Huoltajanäkymä (Distraction-Free Parent Mode):**
   - Kun huoltaja avaa jakolinkin `?e=xyz`, opettajan hallintapalkki (HeaderNav) piilotetaan. Huoltaja näkee vain siistin, selkeän vastauslomakkeen.
-* **Looginen 4-vaiheinen johdatuspolku (Guided Workflow):**
+* **Looginen johdatuspolku (Guided Workflow):**
   1. **Vaihe 1: Aikojen hallinta:** Opettaja luo päivät ja aikaraamit. Ensisijainen painike ohjaa suoraan Vaiheeseen 2 (Esikatsele ja jaa).
   2. **Vaihe 2: Huoltajanäkymä & Jakopaneeli:** Opettaja esikatselee lomaketta sellaisena kuin huoltaja sen näkee, kopioi jakolinkin tai valmiin Wilma-viestin yhdellä klikkauksella. Ensisijainen painike ohjaa Vaiheeseen 3 (Aikasovitus).
-  3. **Vaihe 3: Aikasovitus (palapeli):** Opettaja sovittaa vastanneet oppilaat aikoihin konfliktienestolla ja saa yhteenvedon.
-  4. **Vaihe 4: A4-tuloste & tiedotteet:** Valmis tulostettava lukujärjestyspohja ja Wilma-vahvistusviestit.
+  3. **Vaihe 3: Aikasovitus (palapeli):** Opettaja sovittaa vastanneet oppilaat aikoihin automaattisovituksella tai käsin ja saa yhteenvedon sekä henkilökohtaiset Wilma-viestit.
+  4. **Vaihe 4: A4-tuloste & tiedotteet:** Valmis tulostettava lukujärjestyspohja opettajan kansioon tai oveen.
 
 ### Keskeinen ongelma ja ratkaisu:
 * **Ennen:** Opettaja printtaa kymmeniä paperilappuja reppuihin, huoltajat rastittavat kynällä aikoja, opettaja pyörittää paperikasaa pöydällään yrittäen manuaalisesti sovittaa 25 oppilaan toiveet ilman tuplabuukkauksia, ja kirjoittaa lopuksi jokaiselle Wilma-viestin käsin.
